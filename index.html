@@ -18,9 +18,9 @@
     .floating-hearts,.cursor-layer,.landing-sparkles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
     .heart{position:absolute;bottom:-50px;opacity:.34;animation:floatUp linear forwards}
     @keyframes floatUp{to{transform:translateY(-115vh) rotate(25deg);opacity:0}}
-    .cursor-heart{position:fixed;z-index:100;font-size:18px;animation:cursorPop .8s ease-out forwards}
+    .cursor-heart{position:fixed;z-index:100;font-size:18px;animation:cursorPop .8s ease-out forwards;pointer-events:none;user-select:none}
     @keyframes cursorPop{to{transform:translateY(-45px) scale(.2) rotate(25deg);opacity:0}}
-    .spark{position:fixed;z-index:80;width:9px;height:9px;border-radius:50%;background:white;box-shadow:0 0 14px white;animation:sparkFly .9s ease-out forwards}
+    .spark{position:fixed;z-index:80;width:9px;height:9px;border-radius:50%;background:white;pointer-events:none;user-select:none;box-shadow:0 0 14px white;animation:sparkFly .9s ease-out forwards}
     @keyframes sparkFly{to{transform:translate(var(--x),var(--y)) scale(0);opacity:0}}
     .page{position:relative;z-index:1;width:min(1180px,calc(100% - 24px));margin:auto;padding:28px 0 48px}
     header{text-align:center}
@@ -121,7 +121,7 @@
 
       <aside class="panel controls">
         <h2>Wheel Sections</h2>
-        <p class="save-note">Names, points and progress save automatically on this device.</p>
+        <p class="save-note">Names and progress save automatically. Point values stay hidden until a section wins.</p>
         <div class="add-row"><input id="newOption" maxlength="40" placeholder="Add a new section..."><button id="addBtn" class="action">Add</button></div>
         <div id="optionList" class="option-list"></div>
         <button id="resetBtn" class="action reset">Reset Default Sections</button>
@@ -226,11 +226,11 @@ function renderStats(){
 function drawWheel(){
  let size=canvas.width,c=size/2,r=c-18,slice=Math.PI*2/items.length;ctx.clearRect(0,0,size,size);
  items.forEach((it,i)=>{let start=i*slice-Math.PI/2,end=start+slice;ctx.beginPath();ctx.moveTo(c,c);ctx.arc(c,c,r,start,end);ctx.closePath();ctx.fillStyle=it.color;ctx.fill();ctx.lineWidth=5;ctx.strokeStyle="rgba(255,255,255,.78)";ctx.stroke();
- ctx.save();ctx.translate(c,c);ctx.rotate(start+slice/2);ctx.textAlign="right";ctx.textBaseline="middle";ctx.fillStyle="#fff";ctx.strokeStyle="rgba(0,0,0,.38)";ctx.lineWidth=7;ctx.font=`900 ${Math.max(22,Math.min(39,460/Math.max(items.length,6)))}px system-ui`;let text=`${it.label} • ${it.points} pts`;while(ctx.measureText(text).width>r*.68&&text.length>7)text=text.slice(0,-2).trim()+"…";ctx.strokeText(text,r-35,0);ctx.fillText(text,r-35,0);ctx.restore()});
+ ctx.save();ctx.translate(c,c);ctx.rotate(start+slice/2);ctx.textAlign="right";ctx.textBaseline="middle";ctx.fillStyle="#fff";ctx.strokeStyle="rgba(0,0,0,.38)";ctx.lineWidth=7;ctx.font=`900 ${Math.max(22,Math.min(39,460/Math.max(items.length,6)))}px system-ui`;let text=it.label;while(ctx.measureText(text).width>r*.68&&text.length>7)text=text.slice(0,-2).trim()+"…";ctx.strokeText(text,r-35,0);ctx.fillText(text,r-35,0);ctx.restore()});
  ctx.beginPath();ctx.arc(c,c,r,0,Math.PI*2);ctx.lineWidth=14;ctx.strokeStyle="rgba(255,255,255,.9)";ctx.stroke()
 }
 function renderOptions(){
- $("optionList").innerHTML="";items.forEach((it,i)=>{let row=document.createElement("div");row.className="option";let s=document.createElement("span");s.className="swatch";s.style.background=it.color;let input=document.createElement("input");input.value=it.label;input.oninput=()=>{it.label=input.value||`Section ${i+1}`;saveItems();drawWheel()};let p=document.createElement("span");p.className="option-points";p.textContent=`${it.points} pts`;let del=document.createElement("button");del.className="delete";del.textContent="✕";del.onclick=()=>{if(items.length<=2)return status.textContent="The wheel needs at least two sections.";items.splice(i,1);saveItems();renderOptions();drawWheel()};row.append(s,input,p,del);$("optionList").appendChild(row)})
+ $("optionList").innerHTML="";items.forEach((it,i)=>{let row=document.createElement("div");row.className="option";let s=document.createElement("span");s.className="swatch";s.style.background=it.color;let input=document.createElement("input");input.value=it.label;input.oninput=()=>{it.label=input.value||`Section ${i+1}`;saveItems();drawWheel()};let p=document.createElement("span");p.className="option-points";p.textContent="Surprise ✨";let del=document.createElement("button");del.className="delete";del.textContent="✕";del.onclick=()=>{if(items.length<=2)return status.textContent="The wheel needs at least two sections.";items.splice(i,1);saveItems();renderOptions();drawWheel()};row.append(s,input,p,del);$("optionList").appendChild(row)})
 }
 function renderRewards(){
  $("rewardGrid").innerHTML="";rewards.forEach(r=>{let card=document.createElement("article");card.className="reward-card";card.innerHTML=`<img src="${r.image}" alt=""><div class="reward-body"><h3>${r.emoji} ${r.name}</h3><p>${r.description}</p><div class="cost">${r.cost} points</div></div>`;let b=document.createElement("button");b.className="redeem";b.textContent=points.balance>=r.cost?"Redeem":"Not enough points";b.disabled=points.balance<r.cost;b.onclick=()=>redeem(r);card.querySelector(".reward-body").appendChild(b);$("rewardGrid").appendChild(card)})
@@ -253,7 +253,7 @@ function spin(){
  grantDaily();if(spinning||items.length<2)return;if(voucher.balance<1){let n=new Date();n.setHours(24,0,0,0);$("nextVoucherText").textContent=`Next voucher in about ${Math.ceil((n-Date.now())/3600000)} hour(s).`;return openOverlay("noVoucherOverlay")}
  voucher.balance--;saveVoucher();updateVoucher();spinning=true;spinBtn.disabled=true;status.textContent="The wheel is deciding... 👀";playTone(180,.08);
  let wi=Math.floor(Math.random()*items.length),sd=360/items.length,wc=wi*sd+sd/2,current=((rotation%360)+360)%360,desired=((360-wc)%360+360)%360,adjust=((desired-current)%360+360)%360;rotation+=(6+Math.floor(Math.random()*3))*360+adjust;canvas.style.transform=`rotate(${rotation}deg)`;
- setTimeout(()=>{spinning=false;spinBtn.disabled=false;let win=items[wi];points.balance+=win.points;stats.totalSpins++;stats.totalPointsEarned+=win.points;stats.results[win.label]=(stats.results[win.label]||0)+1;if(win.points===30)stats.bigWins++;savePoints();saveStats();updatePoints();$("winnerText").textContent=win.label;$("winnerPoints").textContent=`+${win.points} Good Boy Points!`;openOverlay("winnerOverlay");status.textContent=`Winner: ${win.label} 🎉`;playTone(520,.13);setTimeout(()=>playTone(760,.18),130);burstSparkles(innerWidth/2,innerHeight*.44,55);let fresh=checkAchievements();if(fresh.length)setTimeout(()=>status.textContent=`Achievement unlocked: ${fresh.map(x=>x.name).join(", ")} 🏆`,550)},5100)
+ setTimeout(()=>{spinning=false;spinBtn.disabled=false;let win=items[wi];points.balance+=win.points;stats.totalSpins++;stats.totalPointsEarned+=win.points;stats.results[win.label]=(stats.results[win.label]||0)+1;if(win.points===30)stats.bigWins++;savePoints();saveStats();updatePoints();$("winnerText").textContent=win.label;$("winnerPoints").textContent=`Surprise! +${win.points} Good Boy Points!`;openOverlay("winnerOverlay");status.textContent=`Winner: ${win.label} 🎉`;playTone(520,.13);setTimeout(()=>playTone(760,.18),130);burstSparkles(innerWidth/2,innerHeight*.44,55);let fresh=checkAchievements();if(fresh.length)setTimeout(()=>status.textContent=`Achievement unlocked: ${fresh.map(x=>x.name).join(", ")} 🏆`,550)},5100)
 }
 
 $("addBtn").onclick=()=>{let label=$("newOption").value.trim();if(!label)return $("newOption").focus();items.push({label,color:randomColor(),points:randomPoints()});$("newOption").value="";saveItems();renderOptions();drawWheel();status.textContent=`"${label}" added.`};
