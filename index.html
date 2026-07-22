@@ -120,11 +120,10 @@
       </div>
 
       <aside class="panel controls">
-        <h2>Wheel Sections</h2>
-        <p class="save-note">Names and progress save automatically. Point values stay hidden until a section wins.</p>
-        <div class="add-row"><input id="newOption" maxlength="40" placeholder="Add a new section..."><button id="addBtn" class="action">Add</button></div>
+        <h2>Shared Wheel Sections</h2>
+        <p class="save-note">Every device loads the same sections, colors, and hidden point values from <strong>wheel-options.json</strong>.</p>
         <div id="optionList" class="option-list"></div>
-        <button id="resetBtn" class="action reset">Reset Default Sections</button>
+        <p class="save-note">To change the shared wheel, edit <strong>wheel-options.json</strong> in GitHub.</p>
       </aside>
     </section>
   </main>
@@ -169,7 +168,7 @@
   </div></div>
 
 <script>
-const STORAGE_KEY="xans-freaky-wheel-v1",VOUCHER_KEY="xans-freaky-wheel-vouchers-v1",POINTS_KEY="xans-good-boy-points-v1",STATS_KEY="xans-wheel-stats-v1",MUSIC_KEY="xans-music-panel-open-v1";
+const VOUCHER_KEY="xans-freaky-wheel-vouchers-v1",POINTS_KEY="xans-good-boy-points-v1",STATS_KEY="xans-wheel-stats-v1",MUSIC_KEY="xans-music-panel-open-v1";
 const defaults=["Kiss","Cuddle","Movie Night","Massage","Surprise Date","Truth","Dare","Ice Cream Run"];
 const rewards=[
  {name:"Extra Cuddle Time",cost:25,emoji:"🫂",description:"A cozy cuddle session.",image:"assets/rewards/cuddle.png"},
@@ -193,11 +192,21 @@ let rotation=0,spinning=false,deferredInstallPrompt=null;
 function randomColor(){return `hsl(${Math.floor(Math.random()*360)} ${72+Math.floor(Math.random()*17)}% ${47+Math.floor(Math.random()*12)}%)`}
 function randomPoints(){return [5,10,15,20,25,30][Math.floor(Math.random()*6)]}
 function normalizeItem(x){return typeof x==="string"?{label:x,color:randomColor(),points:randomPoints()}:{label:x.label||"Untitled",color:x.color||randomColor(),points:Number.isFinite(x.points)?x.points:randomPoints()}}
-function makeItems(a){return a.map(x=>({label:x,color:randomColor(),points:randomPoints()}))}
-function loadItems(){try{let x=JSON.parse(localStorage.getItem(STORAGE_KEY));if(Array.isArray(x)&&x.length>=2)return x.map(normalizeItem)}catch(e){}return makeItems(defaults)}
-let items=loadItems();
-function saveItems(){localStorage.setItem(STORAGE_KEY,JSON.stringify(items))}
-
+let items=defaults.map((label,i)=>({label,color:["#ff4fd8","#9b5de5","#00bbf9","#f15bb5","#fee440","#00f5d4","#fb5607","#8338ec"][i],points:[10,15,20,25,30,5,20,15][i]}));
+async function loadSharedItems(){
+  try{
+    const response=await fetch("./wheel-options.json",{cache:"no-store"});
+    if(!response.ok)throw new Error("Could not load shared wheel");
+    const data=await response.json();
+    if(!Array.isArray(data)||data.length<2)throw new Error("Shared wheel needs at least two sections");
+    items=data.map(normalizeItem);
+    status.textContent="Shared wheel loaded for every device. 💖";
+  }catch(error){
+    status.textContent="Using the bundled shared wheel.";
+  }
+  renderOptions();
+  drawWheel();
+}
 function dateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function loadVoucher(){try{let x=JSON.parse(localStorage.getItem(VOUCHER_KEY));if(x&&Number.isFinite(x.balance)&&x.lastGrantDate)return x}catch(e){}return{balance:1,lastGrantDate:dateKey()}}
 let voucher=loadVoucher();
@@ -230,7 +239,14 @@ function drawWheel(){
  ctx.beginPath();ctx.arc(c,c,r,0,Math.PI*2);ctx.lineWidth=14;ctx.strokeStyle="rgba(255,255,255,.9)";ctx.stroke()
 }
 function renderOptions(){
- $("optionList").innerHTML="";items.forEach((it,i)=>{let row=document.createElement("div");row.className="option";let s=document.createElement("span");s.className="swatch";s.style.background=it.color;let input=document.createElement("input");input.value=it.label;input.oninput=()=>{it.label=input.value||`Section ${i+1}`;saveItems();drawWheel()};let p=document.createElement("span");p.className="option-points";p.textContent="Surprise ✨";let del=document.createElement("button");del.className="delete";del.textContent="✕";del.onclick=()=>{if(items.length<=2)return status.textContent="The wheel needs at least two sections.";items.splice(i,1);saveItems();renderOptions();drawWheel()};row.append(s,input,p,del);$("optionList").appendChild(row)})
+ $("optionList").innerHTML="";
+ items.forEach((it,i)=>{
+   let row=document.createElement("div");row.className="option";
+   let s=document.createElement("span");s.className="swatch";s.style.background=it.color;
+   let input=document.createElement("input");input.value=it.label;input.readOnly=true;
+   let p=document.createElement("span");p.className="option-points";p.textContent="Surprise ✨";
+   row.append(s,input,p);$("optionList").appendChild(row)
+ })
 }
 function renderRewards(){
  $("rewardGrid").innerHTML="";rewards.forEach(r=>{let card=document.createElement("article");card.className="reward-card";card.innerHTML=`<img src="${r.image}" alt=""><div class="reward-body"><h3>${r.emoji} ${r.name}</h3><p>${r.description}</p><div class="cost">${r.cost} points</div></div>`;let b=document.createElement("button");b.className="redeem";b.textContent=points.balance>=r.cost?"Redeem":"Not enough points";b.disabled=points.balance<r.cost;b.onclick=()=>redeem(r);card.querySelector(".reward-body").appendChild(b);$("rewardGrid").appendChild(card)})
@@ -256,9 +272,6 @@ function spin(){
  setTimeout(()=>{spinning=false;spinBtn.disabled=false;let win=items[wi];points.balance+=win.points;stats.totalSpins++;stats.totalPointsEarned+=win.points;stats.results[win.label]=(stats.results[win.label]||0)+1;if(win.points===30)stats.bigWins++;savePoints();saveStats();updatePoints();$("winnerText").textContent=win.label;$("winnerPoints").textContent=`Surprise! +${win.points} Good Boy Points!`;openOverlay("winnerOverlay");status.textContent=`Winner: ${win.label} 🎉`;playTone(520,.13);setTimeout(()=>playTone(760,.18),130);burstSparkles(innerWidth/2,innerHeight*.44,55);let fresh=checkAchievements();if(fresh.length)setTimeout(()=>status.textContent=`Achievement unlocked: ${fresh.map(x=>x.name).join(", ")} 🏆`,550)},5100)
 }
 
-$("addBtn").onclick=()=>{let label=$("newOption").value.trim();if(!label)return $("newOption").focus();items.push({label,color:randomColor(),points:randomPoints()});$("newOption").value="";saveItems();renderOptions();drawWheel();status.textContent=`"${label}" added.`};
-$("newOption").addEventListener("keydown",e=>{if(e.key==="Enter")$("addBtn").click()});
-$("resetBtn").onclick=()=>{items=makeItems(defaults);saveItems();renderOptions();drawWheel();status.textContent="Default sections restored with new random points."};
 spinBtn.onclick=spin;
 $("storeBtn").onclick=()=>{updatePoints();openOverlay("storeOverlay")};
 $("achievementsBtn").onclick=()=>{renderAchievements();openOverlay("achievementOverlay")};
@@ -274,7 +287,7 @@ let lastTrail=0;document.addEventListener("pointermove",e=>{if(Date.now()-lastTr
 function floating(){let h=document.createElement("span");h.className="heart";h.textContent=["💗","💖","💕","✨"][Math.floor(Math.random()*4)];h.style.left=Math.random()*100+"vw";h.style.fontSize=14+Math.random()*24+"px";h.style.animationDuration=7+Math.random()*7+"s";$("floatingHearts").appendChild(h);setTimeout(()=>h.remove(),14500)}
 setInterval(floating,650);for(let i=0;i<10;i++)setTimeout(floating,i*180);
 
-grantDaily();updatePoints();renderOptions();drawWheel();renderAchievements();
+grantDaily();updatePoints();renderAchievements();loadSharedItems();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
 </script>
 </body>

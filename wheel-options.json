@@ -1,0 +1,42 @@
+[
+  {
+    "label": "Kiss",
+    "color": "#ff4fd8",
+    "points": 10
+  },
+  {
+    "label": "Cuddle",
+    "color": "#9b5de5",
+    "points": 15
+  },
+  {
+    "label": "Movie Night",
+    "color": "#00bbf9",
+    "points": 20
+  },
+  {
+    "label": "Massage",
+    "color": "#f15bb5",
+    "points": 25
+  },
+  {
+    "label": "Surprise Date",
+    "color": "#fee440",
+    "points": 30
+  },
+  {
+    "label": "Truth",
+    "color": "#00f5d4",
+    "points": 5
+  },
+  {
+    "label": "Dare",
+    "color": "#fb5607",
+    "points": 20
+  },
+  {
+    "label": "Ice Cream Run",
+    "color": "#8338ec",
+    "points": 15
+  }
+]
