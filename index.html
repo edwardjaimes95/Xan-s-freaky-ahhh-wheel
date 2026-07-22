@@ -415,6 +415,27 @@
       color: #f5daf8;
     }
 
+
+    .points-number{min-width:42px;text-align:center;font-size:1.2rem;color:#8fffd1}
+    .store-button{border-radius:999px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(135deg,#ff4fd8,#7c3aed);color:#fff;padding:10px 16px;cursor:pointer;font:inherit;font-weight:900}
+    .store-overlay{position:fixed;inset:0;z-index:40;display:none;place-items:center;padding:20px;background:rgba(10,0,20,.78);backdrop-filter:blur(10px)}
+    .store-overlay.show{display:grid}
+    .store-panel{width:min(900px,96vw);max-height:90vh;overflow:auto;border-radius:28px;padding:24px;background:linear-gradient(160deg,rgba(66,11,91,.98),rgba(28,6,42,.98));border:1px solid rgba(255,255,255,.18)}
+    .store-header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+    .store-header h2{margin:0;font-size:clamp(1.6rem,4vw,2.5rem)}
+    .close-store{border:0;border-radius:999px;width:42px;height:42px;font-size:1.3rem;cursor:pointer;background:rgba(255,255,255,.12);color:#fff}
+    .store-balance{font-weight:900;color:#8fffd1}
+    .reward-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+    .reward-card{padding:18px;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+    .reward-card h3{margin:0 0 8px}.reward-card p{margin:0 0 14px;color:#ead8ee;min-height:42px}
+    .reward-cost{font-weight:900;color:#ffe46b;margin-bottom:12px}
+    .redeem-btn{width:100%;border:0;border-radius:14px;padding:11px;cursor:pointer;font:inherit;font-weight:900;color:#fff;background:linear-gradient(135deg,#ff4fd8,#7c3aed)}
+    .redeem-btn:disabled{cursor:not-allowed;opacity:.45}
+    .history{margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.14)}
+    .history-item{padding:10px 12px;margin-top:8px;border-radius:12px;background:rgba(255,255,255,.06)}
+    .winner-points{margin-top:10px;font-size:1.25rem;font-weight:900;color:#8fffd1}
+    .option-points{display:inline-flex;min-width:52px;justify-content:center;padding:6px 9px;border-radius:999px;background:rgba(143,255,209,.12);color:#8fffd1;font-weight:900;font-size:.82rem}
+
     @media (max-width: 860px) {
       .layout { grid-template-columns: 1fr; }
       .wheel-panel { min-height: auto; }
@@ -445,6 +466,8 @@
         <div class="voucher-card" aria-live="polite">
           🎟️ Vouchers: <span id="voucherCount" class="voucher-number">0</span>
         </div>
+        <div class="voucher-card">🦴 Good Boy Points: <span id="pointsCount" class="points-number">0</span></div>
+        <button id="storeBtn" class="store-button" type="button">🛍️ Redemption Store</button>
         <button id="installBtn" class="install-button" type="button">📲 Install App</button>
       </div>
       <p class="voucher-help">You receive one new voucher each day. Every spin costs one voucher.</p>
@@ -478,6 +501,16 @@
   </main>
 
 
+
+  <div id="storeOverlay" class="store-overlay" role="dialog" aria-modal="true">
+    <div class="store-panel">
+      <div class="store-header"><h2>🛍️ Good Boy Redemption Store</h2><button id="closeStore" class="close-store">✕</button></div>
+      <p class="store-balance">Available: <span id="storePointsCount">0</span> Good Boy Points</p>
+      <div id="rewardGrid" class="reward-grid"></div>
+      <div class="history"><h3>Recent Redemptions</h3><div id="historyList"></div></div>
+    </div>
+  </div>
+
   <div id="noVoucherOverlay" class="winner-overlay" role="dialog" aria-modal="true" aria-labelledby="noVoucherTitle">
     <div class="winner-card no-voucher-card">
       <div class="winner-small">No vouchers left</div>
@@ -490,7 +523,7 @@
   <div id="winnerOverlay" class="winner-overlay" role="dialog" aria-modal="true" aria-labelledby="winnerText">
     <div class="winner-card">
       <div class="winner-small">The wheel chose</div>
-      <div id="winnerText" class="winner-text"></div>
+      <div id="winnerText" class="winner-text"></div><div id="winnerPoints" class="winner-points"></div>
       <button id="closeWinner" type="button">Spin Again 😈</button>
     </div>
   </div>
@@ -498,6 +531,7 @@
   <script>
     const STORAGE_KEY = "xans-freaky-wheel-v1";
     const VOUCHER_KEY = "xans-freaky-wheel-vouchers-v1";
+    const POINTS_KEY = "xans-good-boy-points-v1";
     const defaults = [
       "Kiss",
       "Cuddle",
@@ -526,6 +560,14 @@
     const closeNoVoucher = document.getElementById("closeNoVoucher");
     const nextVoucherText = document.getElementById("nextVoucherText");
     const floatingHearts = document.getElementById("floatingHearts");
+    const pointsCount = document.getElementById("pointsCount");
+    const storePointsCount = document.getElementById("storePointsCount");
+    const storeBtn = document.getElementById("storeBtn");
+    const storeOverlay = document.getElementById("storeOverlay");
+    const closeStore = document.getElementById("closeStore");
+    const rewardGrid = document.getElementById("rewardGrid");
+    const historyList = document.getElementById("historyList");
+    const winnerPoints = document.getElementById("winnerPoints");
 
     let deferredInstallPrompt = null;
 
@@ -638,6 +680,77 @@
         ? "On iPhone: tap Share, then choose “Add to Home Screen.”"
         : "Use your browser menu and choose “Install app” or “Add to Home screen.”";
     });
+
+
+    const rewards = [
+      {name:"Extra Cuddle Time",cost:25,emoji:"🫂",description:"A cozy cuddle session."},
+      {name:"Favorite Snack",cost:40,emoji:"🍫",description:"Choose a favorite snack."},
+      {name:"Movie Night Pick",cost:60,emoji:"🎬",description:"Pick the next movie."},
+      {name:"20-Minute Massage",cost:90,emoji:"💆",description:"A relaxing massage."},
+      {name:"Choose the Date",cost:125,emoji:"💖",description:"Choose the next date activity."},
+      {name:"Mystery Reward",cost:175,emoji:"🎁",description:"A surprise reward from Edward."}
+    ];
+
+    function randomPointValue(){
+      const values=[5,10,15,20,25,30];
+      return values[Math.floor(Math.random()*values.length)];
+    }
+
+    function normalizeItem(item){
+      if(typeof item==="string") return {label:item,color:randomColor(),points:randomPointValue()};
+      return {label:item.label||item.text||"Untitled",color:item.color||randomColor(),points:Number.isFinite(item.points)?item.points:randomPointValue()};
+    }
+
+    function loadPoints(){
+      try{
+        const saved=JSON.parse(localStorage.getItem(POINTS_KEY));
+        if(saved&&Number.isFinite(saved.balance)&&Array.isArray(saved.history)) return saved;
+      }catch(e){}
+      return {balance:0,history:[]};
+    }
+    let pointsState=loadPoints();
+
+    function savePoints(){localStorage.setItem(POINTS_KEY,JSON.stringify(pointsState));}
+    function updatePoints(){
+      pointsCount.textContent=pointsState.balance;
+      storePointsCount.textContent=pointsState.balance;
+      renderRewards();
+      renderHistory();
+    }
+
+    function renderRewards(){
+      rewardGrid.innerHTML="";
+      rewards.forEach(r=>{
+        const card=document.createElement("article"); card.className="reward-card";
+        card.innerHTML=`<h3>${r.emoji} ${r.name}</h3><p>${r.description}</p><div class="reward-cost">${r.cost} points</div>`;
+        const b=document.createElement("button"); b.className="redeem-btn";
+        b.textContent=pointsState.balance>=r.cost?"Redeem":"Not enough points";
+        b.disabled=pointsState.balance<r.cost;
+        b.onclick=()=>redeem(r);
+        card.appendChild(b); rewardGrid.appendChild(card);
+      });
+    }
+
+    function redeem(r){
+      if(pointsState.balance<r.cost) return;
+      if(!confirm(`Redeem "${r.name}" for ${r.cost} points?`)) return;
+      pointsState.balance-=r.cost;
+      pointsState.history.unshift({name:r.name,cost:r.cost,date:new Date().toLocaleString()});
+      pointsState.history=pointsState.history.slice(0,10);
+      savePoints(); updatePoints();
+      status.textContent=`${r.name} redeemed! Show this screen to claim it 💖`;
+    }
+
+    function renderHistory(){
+      historyList.innerHTML="";
+      if(!pointsState.history.length){
+        historyList.innerHTML='<div class="history-item">No rewards redeemed yet.</div>'; return;
+      }
+      pointsState.history.forEach(h=>{
+        const d=document.createElement("div"); d.className="history-item";
+        d.textContent=`${h.name} — ${h.cost} points — ${h.date}`; historyList.appendChild(d);
+      });
+    }
 
     function randomColor() {
       const hue = Math.floor(Math.random() * 360);
@@ -767,7 +880,7 @@
         return;
       }
 
-      items.push({ label, color: randomColor() });
+      items.push({ label, color: randomColor(), points: randomPointValue() });
       newOption.value = "";
       saveItems();
       renderOptions();
@@ -827,7 +940,11 @@
       setTimeout(() => {
         spinning = false;
         spinBtn.disabled = false;
-        winnerText.textContent = items[winnerIndex].label;
+        const winningItem=items[winnerIndex];
+        winnerText.textContent=winningItem.label;
+        winnerPoints.textContent=`+${winningItem.points} Good Boy Points!`;
+        pointsState.balance+=winningItem.points;
+        savePoints(); updatePoints();
         winnerOverlay.classList.add("show");
         status.textContent = `Winner: ${items[winnerIndex].label} 🎉`;
         celebrate();
@@ -850,6 +967,10 @@
       if (event.target === winnerOverlay) winnerOverlay.classList.remove("show");
     });
 
+    storeBtn.addEventListener("click",()=>{updatePoints();storeOverlay.classList.add("show");});
+    closeStore.addEventListener("click",()=>storeOverlay.classList.remove("show"));
+    storeOverlay.addEventListener("click",e=>{if(e.target===storeOverlay)storeOverlay.classList.remove("show");});
+
     closeNoVoucher.addEventListener("click", () => {
       noVoucherOverlay.classList.remove("show");
       spinBtn.focus();
@@ -869,6 +990,7 @@
 
     createFloatingHearts();
     grantDailyVouchers();
+    updatePoints();
     renderOptions();
     drawWheel();
 

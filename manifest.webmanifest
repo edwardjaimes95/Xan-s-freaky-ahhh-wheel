@@ -1,13 +1,11 @@
 {
   "name": "Xan's Freaky Ahhh Wheel",
   "short_name": "Xan's Wheel",
-  "description": "A daily voucher-powered spinning wheel made for Xan.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#17001f",
   "theme_color": "#3b0755",
-  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "icons/icon-192.png",
