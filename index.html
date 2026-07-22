@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#3b0755" />
+  <meta name="description" content="Xan's Freaky Ahhh Wheel — one daily voucher, one exciting spin." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <title>Xan's Freaky Ahhh Wheel</title>
   <style>
     :root {
@@ -326,6 +331,90 @@
       to { transform: translateY(110vh) rotate(900deg); opacity: .9; }
     }
 
+
+    .floating-hearts {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .heart {
+      position: absolute;
+      bottom: -70px;
+      opacity: 0;
+      filter: drop-shadow(0 4px 8px rgba(255,79,216,.28));
+      animation: floatHeart linear infinite;
+      user-select: none;
+    }
+
+    @keyframes floatHeart {
+      0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(.7); opacity: 0; }
+      12% { opacity: .72; }
+      75% { opacity: .5; }
+      100% { transform: translate3d(var(--drift), -115vh, 0) rotate(35deg) scale(1.25); opacity: 0; }
+    }
+
+    .top-tools {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px auto 0;
+    }
+
+    .voucher-card, .install-button {
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.10);
+      color: white;
+      padding: 10px 16px;
+      backdrop-filter: blur(12px);
+    }
+
+    .voucher-card {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 800;
+    }
+
+    .voucher-number {
+      min-width: 30px;
+      text-align: center;
+      font-size: 1.2rem;
+      color: #ffe46b;
+    }
+
+    .install-button {
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      transition: transform .18s ease, background .18s ease;
+    }
+
+    .install-button:hover {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.18);
+    }
+
+    .voucher-help {
+      margin: 9px 0 0;
+      font-size: .88rem;
+      color: var(--muted);
+    }
+
+    .no-voucher-card {
+      background: linear-gradient(145deg, rgba(88,28,135,.98), rgba(48,12,70,.98));
+    }
+
+    .next-voucher {
+      margin: 4px 0 20px;
+      color: #f5daf8;
+    }
+
     @media (max-width: 860px) {
       .layout { grid-template-columns: 1fr; }
       .wheel-panel { min-height: auto; }
@@ -346,11 +435,19 @@
 </head>
 <body>
   <div class="sparkles"></div>
+  <div id="floatingHearts" class="floating-hearts" aria-hidden="true"></div>
 
   <main class="page">
     <header>
       <h1>💖 Xan's Freaky Ahhh Wheel 💖</h1>
       <p class="tagline">Spin if you dare... 😈</p>
+      <div class="top-tools">
+        <div class="voucher-card" aria-live="polite">
+          🎟️ Vouchers: <span id="voucherCount" class="voucher-number">0</span>
+        </div>
+        <button id="installBtn" class="install-button" type="button">📲 Install App</button>
+      </div>
+      <p class="voucher-help">You receive one new voucher each day. Every spin costs one voucher.</p>
     </header>
 
     <section class="layout">
@@ -380,6 +477,16 @@
     </section>
   </main>
 
+
+  <div id="noVoucherOverlay" class="winner-overlay" role="dialog" aria-modal="true" aria-labelledby="noVoucherTitle">
+    <div class="winner-card no-voucher-card">
+      <div class="winner-small">No vouchers left</div>
+      <div id="noVoucherTitle" class="winner-text">Come back tomorrow 💖</div>
+      <p id="nextVoucherText" class="next-voucher"></p>
+      <button id="closeNoVoucher" type="button">Okay</button>
+    </div>
+  </div>
+
   <div id="winnerOverlay" class="winner-overlay" role="dialog" aria-modal="true" aria-labelledby="winnerText">
     <div class="winner-card">
       <div class="winner-small">The wheel chose</div>
@@ -390,6 +497,7 @@
 
   <script>
     const STORAGE_KEY = "xans-freaky-wheel-v1";
+    const VOUCHER_KEY = "xans-freaky-wheel-vouchers-v1";
     const defaults = [
       "Kiss",
       "Cuddle",
@@ -412,9 +520,124 @@
     const winnerOverlay = document.getElementById("winnerOverlay");
     const winnerText = document.getElementById("winnerText");
     const closeWinner = document.getElementById("closeWinner");
+    const voucherCount = document.getElementById("voucherCount");
+    const installBtn = document.getElementById("installBtn");
+    const noVoucherOverlay = document.getElementById("noVoucherOverlay");
+    const closeNoVoucher = document.getElementById("closeNoVoucher");
+    const nextVoucherText = document.getElementById("nextVoucherText");
+    const floatingHearts = document.getElementById("floatingHearts");
+
+    let deferredInstallPrompt = null;
 
     let rotation = 0;
     let spinning = false;
+
+
+    function localDateKey(date = new Date()) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function loadVoucherState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(VOUCHER_KEY));
+        if (saved && Number.isFinite(saved.balance) && saved.lastGrantDate) {
+          return saved;
+        }
+      } catch (error) {}
+      return { balance: 1, lastGrantDate: localDateKey() };
+    }
+
+    let voucherState = loadVoucherState();
+
+    function daysBetweenDateKeys(startKey, endKey) {
+      const [sy, sm, sd] = startKey.split("-").map(Number);
+      const [ey, em, ed] = endKey.split("-").map(Number);
+      const start = Date.UTC(sy, sm - 1, sd);
+      const end = Date.UTC(ey, em - 1, ed);
+      return Math.max(0, Math.floor((end - start) / 86400000));
+    }
+
+    function grantDailyVouchers() {
+      const today = localDateKey();
+      const missedDays = daysBetweenDateKeys(voucherState.lastGrantDate, today);
+      if (missedDays > 0) {
+        voucherState.balance += missedDays;
+        voucherState.lastGrantDate = today;
+        saveVoucherState();
+        status.textContent = `You received ${missedDays} daily voucher${missedDays === 1 ? "" : "s"}! 🎟️`;
+      }
+      updateVoucherDisplay();
+    }
+
+    function saveVoucherState() {
+      localStorage.setItem(VOUCHER_KEY, JSON.stringify(voucherState));
+    }
+
+    function updateVoucherDisplay() {
+      voucherCount.textContent = voucherState.balance;
+      spinBtn.textContent = voucherState.balance > 0 ? "SPIN" : "NO TICKET";
+      spinBtn.setAttribute("aria-label", `${voucherState.balance} vouchers available. Spin costs one voucher.`);
+    }
+
+    function timeUntilTomorrow() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setHours(24, 0, 0, 0);
+      const totalMinutes = Math.max(1, Math.ceil((tomorrow - now) / 60000));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return `${hours}h ${minutes}m`;
+    }
+
+    function showNoVoucherMessage() {
+      nextVoucherText.textContent = `Your next voucher arrives in about ${timeUntilTomorrow()}.`;
+      noVoucherOverlay.classList.add("show");
+    }
+
+    function createFloatingHearts() {
+      const symbols = ["💖", "💕", "💗", "💘", "💞"];
+      for (let i = 0; i < 18; i++) {
+        const heart = document.createElement("span");
+        heart.className = "heart";
+        heart.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        heart.style.left = `${Math.random() * 100}%`;
+        heart.style.fontSize = `${18 + Math.random() * 28}px`;
+        heart.style.animationDuration = `${9 + Math.random() * 11}s`;
+        heart.style.animationDelay = `${-Math.random() * 18}s`;
+        heart.style.setProperty("--drift", `${-80 + Math.random() * 160}px`);
+        floatingHearts.appendChild(heart);
+      }
+    }
+
+    window.addEventListener("beforeinstallprompt", event => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      installBtn.hidden = false;
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredInstallPrompt = null;
+      installBtn.textContent = "✓ Installed";
+      installBtn.disabled = true;
+      status.textContent = "Xan's wheel was installed successfully! 💖";
+    });
+
+    installBtn.addEventListener("click", async () => {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        return;
+      }
+
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      status.textContent = isIOS
+        ? "On iPhone: tap Share, then choose “Add to Home Screen.”"
+        : "Use your browser menu and choose “Install app” or “Add to Home screen.”";
+    });
 
     function randomColor() {
       const hue = Math.floor(Math.random() * 360);
@@ -573,7 +796,17 @@
     }
 
     function spin() {
+      grantDailyVouchers();
       if (spinning || items.length < 2) return;
+
+      if (voucherState.balance < 1) {
+        showNoVoucherMessage();
+        return;
+      }
+
+      voucherState.balance -= 1;
+      saveVoucherState();
+      updateVoucherDisplay();
 
       spinning = true;
       spinBtn.disabled = true;
@@ -617,6 +850,15 @@
       if (event.target === winnerOverlay) winnerOverlay.classList.remove("show");
     });
 
+    closeNoVoucher.addEventListener("click", () => {
+      noVoucherOverlay.classList.remove("show");
+      spinBtn.focus();
+    });
+
+    noVoucherOverlay.addEventListener("click", event => {
+      if (event.target === noVoucherOverlay) noVoucherOverlay.classList.remove("show");
+    });
+
     resetBtn.addEventListener("click", () => {
       items = makeItems(defaults);
       saveItems();
@@ -625,8 +867,18 @@
       status.textContent = "Default sections restored with new random colors.";
     });
 
+    createFloatingHearts();
+    grantDailyVouchers();
     renderOptions();
     drawWheel();
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js").catch(() => {
+          status.textContent = "The site works, but offline installation could not be enabled.";
+        });
+      });
+    }
   </script>
 </body>
 </html>
