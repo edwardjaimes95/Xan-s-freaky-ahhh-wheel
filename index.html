@@ -1,1006 +1,281 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#3b0755" />
-  <meta name="description" content="Xan's Freaky Ahhh Wheel — one daily voucher, one exciting spin." />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#3b0755">
   <title>Xan's Freaky Ahhh Wheel</title>
+  <link rel="manifest" href="manifest.webmanifest">
   <style>
-    :root {
-      --bg-1: #17001f;
-      --bg-2: #3b0755;
-      --panel: rgba(255,255,255,.10);
-      --panel-border: rgba(255,255,255,.18);
-      --text: #fff7ff;
-      --muted: #e8c9ef;
-      --accent: #ff4fd8;
-      --accent-2: #a855f7;
-      --danger: #ff5c7a;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at 20% 10%, rgba(255,79,216,.22), transparent 32%),
-        radial-gradient(circle at 80% 20%, rgba(168,85,247,.25), transparent 30%),
-        linear-gradient(145deg, var(--bg-1), var(--bg-2));
-      overflow-x: hidden;
-    }
-
-    .sparkles {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: .45;
-      background-image:
-        radial-gradient(circle, white 0 1px, transparent 1.5px),
-        radial-gradient(circle, #ff9bea 0 1px, transparent 1.5px);
-      background-size: 42px 42px, 67px 67px;
-      background-position: 0 0, 15px 18px;
-      animation: drift 14s linear infinite;
-    }
-
-    @keyframes drift {
-      to { background-position: 42px 42px, 82px 85px; }
-    }
-
-    .page {
-      width: min(1180px, calc(100% - 28px));
-      margin: 0 auto;
-      padding: 34px 0 48px;
-      position: relative;
-      z-index: 1;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(2rem, 6vw, 4.6rem);
-      line-height: .98;
-      text-shadow: 0 0 28px rgba(255,79,216,.55);
-    }
-
-    .tagline {
-      margin: 14px 0 0;
-      color: var(--muted);
-      font-size: clamp(1rem, 2.2vw, 1.3rem);
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr);
-      gap: 24px;
-      align-items: start;
-    }
-
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: 24px;
-      backdrop-filter: blur(14px);
-      padding: 20px;
-      box-shadow: 0 20px 50px rgba(0,0,0,.28);
-    }
-
-    .wheel-panel {
-      display: grid;
-      place-items: center;
-      min-height: 620px;
-    }
-
-    .wheel-wrap {
-      position: relative;
-      width: min(90vw, 570px);
-      aspect-ratio: 1;
-      display: grid;
-      place-items: center;
-    }
-
-    canvas {
-      width: 100%;
-      height: 100%;
-      filter: drop-shadow(0 18px 30px rgba(0,0,0,.4));
-      transition: transform 5s cubic-bezier(.15,.8,.15,1);
-    }
-
-    .pointer {
-      position: absolute;
-      top: -8px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 22px solid transparent;
-      border-right: 22px solid transparent;
-      border-top: 48px solid #fff;
-      filter: drop-shadow(0 5px 8px rgba(0,0,0,.35));
-      z-index: 4;
-    }
-
-    .spin-button {
-      position: absolute;
-      width: 118px;
-      height: 118px;
-      border-radius: 50%;
-      border: 7px solid rgba(255,255,255,.8);
-      background: linear-gradient(145deg, var(--accent), var(--accent-2));
-      color: white;
-      font-weight: 900;
-      font-size: 1.25rem;
-      letter-spacing: .08em;
-      cursor: pointer;
-      box-shadow: 0 0 0 8px rgba(40,0,55,.45), 0 0 30px rgba(255,79,216,.65);
-      transition: transform .18s ease, filter .18s ease;
-      z-index: 3;
-    }
-
-    .spin-button:hover { transform: scale(1.05); filter: brightness(1.12); }
-    .spin-button:disabled { cursor: not-allowed; filter: grayscale(.5); }
-
-    .controls h2 {
-      margin: 0 0 6px;
-    }
-
-    .save-note {
-      margin: 0 0 16px;
-      color: var(--muted);
-      font-size: .92rem;
-    }
-
-    .add-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-
-    input {
-      flex: 1;
-      min-width: 0;
-      border: 1px solid rgba(255,255,255,.22);
-      background: rgba(15,0,25,.42);
-      color: white;
-      border-radius: 12px;
-      padding: 12px 13px;
-      font: inherit;
-      outline: none;
-    }
-
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(255,79,216,.2);
-    }
-
-    button.action {
-      border: 0;
-      border-radius: 12px;
-      padding: 11px 14px;
-      color: white;
-      font-weight: 800;
-      cursor: pointer;
-      background: linear-gradient(145deg, var(--accent), var(--accent-2));
-    }
-
-    .option-list {
-      display: grid;
-      gap: 9px;
-      max-height: 430px;
-      overflow: auto;
-      padding-right: 4px;
-    }
-
-    .option {
-      display: grid;
-      grid-template-columns: 18px minmax(0,1fr) auto;
-      gap: 10px;
-      align-items: center;
-      padding: 10px;
-      border-radius: 14px;
-      background: rgba(255,255,255,.07);
-      border: 1px solid rgba(255,255,255,.1);
-    }
-
-    .swatch {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,.75);
-    }
-
-    .option input {
-      padding: 8px 9px;
-      background: transparent;
-      border-color: transparent;
-    }
-
-    .option input:focus {
-      background: rgba(0,0,0,.16);
-      border-color: rgba(255,255,255,.25);
-      box-shadow: none;
-    }
-
-    .delete {
-      border: 0;
-      width: 35px;
-      height: 35px;
-      border-radius: 10px;
-      color: white;
-      background: rgba(255,92,122,.2);
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    .delete:hover { background: rgba(255,92,122,.42); }
-
-    .reset {
-      margin-top: 14px;
-      width: 100%;
-      background: transparent !important;
-      border: 1px solid rgba(255,255,255,.24) !important;
-    }
-
-    .status {
-      text-align: center;
-      min-height: 27px;
-      margin-top: 14px;
-      color: var(--muted);
-    }
-
-    .winner-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 20;
-      display: none;
-      place-items: center;
-      padding: 20px;
-      background: rgba(15,0,25,.72);
-      backdrop-filter: blur(10px);
-    }
-
-    .winner-overlay.show {
-      display: grid;
-      animation: fadeIn .25s ease both;
-    }
-
-    .winner-card {
-      width: min(560px, 95vw);
-      text-align: center;
-      border-radius: 28px;
-      border: 2px solid rgba(255,255,255,.4);
-      background: linear-gradient(145deg, rgba(255,79,216,.96), rgba(107,33,168,.96));
-      padding: 34px 24px;
-      box-shadow: 0 30px 90px rgba(0,0,0,.52);
-      animation: pop .45s cubic-bezier(.2,.9,.2,1.3) both;
-    }
-
-    .winner-small {
-      font-size: 1rem;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-      opacity: .88;
-    }
-
-    .winner-text {
-      margin: 12px 0 20px;
-      font-size: clamp(2.2rem, 8vw, 5rem);
-      line-height: 1;
-      font-weight: 1000;
-      overflow-wrap: anywhere;
-      text-shadow: 0 5px 20px rgba(0,0,0,.28);
-    }
-
-    .winner-card button {
-      border: 0;
-      border-radius: 999px;
-      padding: 12px 22px;
-      font-weight: 900;
-      cursor: pointer;
-      background: white;
-      color: #681163;
-    }
-
-    @keyframes fadeIn { from { opacity: 0; } }
-    @keyframes pop {
-      from { opacity: 0; transform: scale(.6) rotate(-4deg); }
-      to { opacity: 1; transform: scale(1) rotate(0); }
-    }
-
-    .confetti {
-      position: fixed;
-      top: -20px;
-      width: 10px;
-      height: 18px;
-      z-index: 25;
-      pointer-events: none;
-      animation: fall linear forwards;
-    }
-
-    @keyframes fall {
-      to { transform: translateY(110vh) rotate(900deg); opacity: .9; }
-    }
-
-
-    .floating-hearts {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 0;
-    }
-
-    .heart {
-      position: absolute;
-      bottom: -70px;
-      opacity: 0;
-      filter: drop-shadow(0 4px 8px rgba(255,79,216,.28));
-      animation: floatHeart linear infinite;
-      user-select: none;
-    }
-
-    @keyframes floatHeart {
-      0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(.7); opacity: 0; }
-      12% { opacity: .72; }
-      75% { opacity: .5; }
-      100% { transform: translate3d(var(--drift), -115vh, 0) rotate(35deg) scale(1.25); opacity: 0; }
-    }
-
-    .top-tools {
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin: 18px auto 0;
-    }
-
-    .voucher-card, .install-button {
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.22);
-      background: rgba(255,255,255,.10);
-      color: white;
-      padding: 10px 16px;
-      backdrop-filter: blur(12px);
-    }
-
-    .voucher-card {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      font-weight: 800;
-    }
-
-    .voucher-number {
-      min-width: 30px;
-      text-align: center;
-      font-size: 1.2rem;
-      color: #ffe46b;
-    }
-
-    .install-button {
-      cursor: pointer;
-      font: inherit;
-      font-weight: 800;
-      transition: transform .18s ease, background .18s ease;
-    }
-
-    .install-button:hover {
-      transform: translateY(-1px);
-      background: rgba(255,255,255,.18);
-    }
-
-    .voucher-help {
-      margin: 9px 0 0;
-      font-size: .88rem;
-      color: var(--muted);
-    }
-
-    .no-voucher-card {
-      background: linear-gradient(145deg, rgba(88,28,135,.98), rgba(48,12,70,.98));
-    }
-
-    .next-voucher {
-      margin: 4px 0 20px;
-      color: #f5daf8;
-    }
-
-
-    .points-number{min-width:42px;text-align:center;font-size:1.2rem;color:#8fffd1}
-    .store-button{border-radius:999px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(135deg,#ff4fd8,#7c3aed);color:#fff;padding:10px 16px;cursor:pointer;font:inherit;font-weight:900}
-    .store-overlay{position:fixed;inset:0;z-index:40;display:none;place-items:center;padding:20px;background:rgba(10,0,20,.78);backdrop-filter:blur(10px)}
-    .store-overlay.show{display:grid}
-    .store-panel{width:min(900px,96vw);max-height:90vh;overflow:auto;border-radius:28px;padding:24px;background:linear-gradient(160deg,rgba(66,11,91,.98),rgba(28,6,42,.98));border:1px solid rgba(255,255,255,.18)}
-    .store-header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
-    .store-header h2{margin:0;font-size:clamp(1.6rem,4vw,2.5rem)}
-    .close-store{border:0;border-radius:999px;width:42px;height:42px;font-size:1.3rem;cursor:pointer;background:rgba(255,255,255,.12);color:#fff}
-    .store-balance{font-weight:900;color:#8fffd1}
-    .reward-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
-    .reward-card{padding:18px;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
-    .reward-card h3{margin:0 0 8px}.reward-card p{margin:0 0 14px;color:#ead8ee;min-height:42px}
-    .reward-cost{font-weight:900;color:#ffe46b;margin-bottom:12px}
-    .redeem-btn{width:100%;border:0;border-radius:14px;padding:11px;cursor:pointer;font:inherit;font-weight:900;color:#fff;background:linear-gradient(135deg,#ff4fd8,#7c3aed)}
-    .redeem-btn:disabled{cursor:not-allowed;opacity:.45}
-    .history{margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.14)}
-    .history-item{padding:10px 12px;margin-top:8px;border-radius:12px;background:rgba(255,255,255,.06)}
-    .winner-points{margin-top:10px;font-size:1.25rem;font-weight:900;color:#8fffd1}
-    .option-points{display:inline-flex;min-width:52px;justify-content:center;padding:6px 9px;border-radius:999px;background:rgba(143,255,209,.12);color:#8fffd1;font-weight:900;font-size:.82rem}
-
-    @media (max-width: 860px) {
-      .layout { grid-template-columns: 1fr; }
-      .wheel-panel { min-height: auto; }
-      .controls { order: -1; }
-    }
-
-    @media (max-width: 520px) {
-      .page { width: min(100% - 16px, 1180px); padding-top: 22px; }
-      .panel { padding: 14px; border-radius: 18px; }
-      .spin-button { width: 92px; height: 92px; font-size: 1rem; }
-      .pointer {
-        border-left-width: 17px;
-        border-right-width: 17px;
-        border-top-width: 38px;
-      }
-    }
+    :root{--pink:#ff4fd8;--purple:#7c3aed;--deep:#17001f;--card:rgba(59,7,85,.78);--mint:#8fffd1;--gold:#ffe46b}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;color:white;font-family:Inter,system-ui,sans-serif;background:
+      radial-gradient(circle at 20% 10%,#6c167f 0,transparent 32%),
+      radial-gradient(circle at 85% 20%,#4f1c91 0,transparent 30%),
+      linear-gradient(145deg,#120018,#26002f 55%,#130021);overflow-x:hidden}
+    button,input{font:inherit}
+    button{touch-action:manipulation}
+    .floating-hearts,.cursor-layer,.landing-sparkles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+    .heart{position:absolute;bottom:-50px;opacity:.34;animation:floatUp linear forwards}
+    @keyframes floatUp{to{transform:translateY(-115vh) rotate(25deg);opacity:0}}
+    .cursor-heart{position:fixed;z-index:100;font-size:18px;animation:cursorPop .8s ease-out forwards}
+    @keyframes cursorPop{to{transform:translateY(-45px) scale(.2) rotate(25deg);opacity:0}}
+    .spark{position:fixed;z-index:80;width:9px;height:9px;border-radius:50%;background:white;box-shadow:0 0 14px white;animation:sparkFly .9s ease-out forwards}
+    @keyframes sparkFly{to{transform:translate(var(--x),var(--y)) scale(0);opacity:0}}
+    .page{position:relative;z-index:1;width:min(1180px,calc(100% - 24px));margin:auto;padding:28px 0 48px}
+    header{text-align:center}
+    h1{font-size:clamp(2rem,6vw,4.5rem);margin:.2em 0 .05em;text-shadow:0 0 20px #ff4fd8}
+    .tagline{font-size:1.15rem;color:#f8c9ef;margin:.25rem 0 1rem}
+    .top-tools{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+    .pill,.tool-btn{border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:10px 15px;background:rgba(255,255,255,.09);color:white;font-weight:850}
+    .tool-btn{cursor:pointer;background:linear-gradient(135deg,var(--pink),var(--purple));box-shadow:0 8px 22px rgba(124,58,237,.25)}
+    .voucher-help{color:#dac9df;font-size:.92rem}
+    .layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.72fr);gap:18px;align-items:start}
+    .panel{background:var(--card);border:1px solid rgba(255,255,255,.13);border-radius:26px;padding:20px;box-shadow:0 24px 65px rgba(0,0,0,.32);backdrop-filter:blur(12px)}
+    .wheel-panel{display:grid;place-items:center}
+    .wheel-wrap{position:relative;width:min(680px,88vw);aspect-ratio:1}
+    canvas{display:block;width:100%;height:100%;border-radius:50%;transition:transform 5s cubic-bezier(.12,.72,.12,1);filter:drop-shadow(0 18px 28px rgba(0,0,0,.45))}
+    .pointer{position:absolute;z-index:3;left:50%;top:-8px;transform:translateX(-50%);border-left:22px solid transparent;border-right:22px solid transparent;border-top:48px solid var(--gold);filter:drop-shadow(0 5px 4px rgba(0,0,0,.4))}
+    .spin-button{position:absolute;z-index:4;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:118px;height:118px;border-radius:50%;border:8px solid rgba(255,255,255,.85);background:linear-gradient(145deg,#ff72df,#8a32eb);color:white;font-weight:1000;font-size:1.25rem;cursor:pointer;box-shadow:0 0 0 8px rgba(255,255,255,.12),0 10px 28px rgba(0,0,0,.4)}
+    .spin-button:disabled{opacity:.62;cursor:not-allowed}
+    .status{text-align:center;margin-top:14px;min-height:28px;color:#f7d8f0;font-weight:700}
+    .controls h2{margin-top:0}
+    .save-note{color:#d7c4dc}
+    .add-row{display:flex;gap:8px}
+    .add-row input,.option input{min-width:0;width:100%;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(0,0,0,.22);color:white;padding:10px}
+    .action,.delete{border:0;border-radius:12px;color:white;background:linear-gradient(135deg,var(--pink),var(--purple));font-weight:900;padding:10px 13px;cursor:pointer}
+    .reset{width:100%;margin-top:12px;background:rgba(255,255,255,.12)}
+    .option-list{display:grid;gap:8px;margin-top:12px;max-height:510px;overflow:auto}
+    .option{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border-radius:14px;padding:8px}
+    .swatch{width:18px;height:18px;border-radius:50%;flex:0 0 auto}
+    .option-points{padding:5px 8px;border-radius:999px;background:rgba(143,255,209,.12);color:var(--mint);font-weight:900;font-size:.78rem;white-space:nowrap}
+    .delete{background:rgba(255,79,99,.24)}
+    .overlay{position:fixed;inset:0;z-index:50;display:none;place-items:center;padding:18px;background:rgba(8,0,15,.78);backdrop-filter:blur(10px)}
+    .overlay.show{display:grid}
+    .modal{width:min(930px,96vw);max-height:91vh;overflow:auto;border-radius:28px;padding:23px;background:linear-gradient(160deg,#490963,#1d052c);border:1px solid rgba(255,255,255,.17);box-shadow:0 30px 80px rgba(0,0,0,.55)}
+    .modal-head{display:flex;justify-content:space-between;gap:14px;align-items:center}
+    .modal h2{margin:.1rem 0 1rem}
+    .close{border:0;border-radius:50%;width:42px;height:42px;color:white;background:rgba(255,255,255,.12);cursor:pointer}
+    .reward-grid,.achievement-grid,.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:14px}
+    .reward-card,.achievement-card,.stat-card{overflow:hidden;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13)}
+    .reward-card img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+    .reward-body{padding:15px}
+    .reward-body h3{margin:0 0 7px}.reward-body p{min-height:40px;color:#e4d2e8}
+    .cost{font-weight:950;color:var(--gold);margin-bottom:11px}
+    .redeem{width:100%;border:0;border-radius:12px;padding:10px;background:linear-gradient(135deg,var(--pink),var(--purple));color:white;font-weight:900;cursor:pointer}
+    .redeem:disabled{opacity:.4;cursor:not-allowed}
+    .history{margin-top:20px;border-top:1px solid rgba(255,255,255,.15);padding-top:15px}
+    .history-item{padding:9px 11px;border-radius:11px;background:rgba(255,255,255,.06);margin-top:7px}
+    .music-panel{position:fixed;z-index:45;right:16px;top:16px;width:min(390px,calc(100vw - 32px));transform:translateX(calc(100% + 30px));transition:.32s ease;background:#260034;border:1px solid rgba(255,255,255,.17);border-radius:22px;padding:14px;box-shadow:0 25px 60px rgba(0,0,0,.48)}
+    .music-panel.open{transform:none}
+    .music-panel iframe{width:100%;border:0;border-radius:14px;display:block}
+    .winner-card{text-align:center;width:min(520px,94vw);padding:34px;border-radius:30px;background:linear-gradient(150deg,#ff4fd8,#6e2fc4);box-shadow:0 0 55px rgba(255,79,216,.45);animation:winnerIn .45s cubic-bezier(.2,1.5,.5,1)}
+    @keyframes winnerIn{from{transform:scale(.55) rotate(-4deg);opacity:0}}
+    .winner-small{text-transform:uppercase;letter-spacing:.15em;font-weight:900}
+    .winner-text{font-size:clamp(2rem,7vw,4.3rem);font-weight:1000;margin:10px 0}
+    .winner-points{font-size:1.35rem;color:var(--mint);font-weight:950}
+    .winner-card button{margin-top:18px;border:0;border-radius:999px;padding:12px 20px;font-weight:900;cursor:pointer}
+    .unlock-card{position:relative;overflow:hidden}
+    .unlock-card::before{content:"";position:absolute;inset:-80%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);transform:rotate(25deg);animation:shine 1.2s ease}
+    @keyframes shine{to{translate:120%}}
+    .achievement-card{padding:16px;opacity:.5}
+    .achievement-card.unlocked{opacity:1;box-shadow:0 0 22px rgba(255,228,107,.16)}
+    .achievement-icon{font-size:2rem}.achievement-card h3{margin:7px 0 4px}.achievement-card p{color:#dfcfe3}
+    .stat-card{padding:18px;text-align:center}.stat-number{font-size:2rem;font-weight:1000;color:var(--mint)}
+    @media(max-width:860px){.layout{grid-template-columns:1fr}.controls{order:-1}}
+    @media(max-width:520px){.page{width:min(100% - 14px,1180px);padding-top:16px}.panel{padding:13px}.spin-button{width:94px;height:94px}}
   </style>
 </head>
 <body>
-  <div class="sparkles"></div>
-  <div id="floatingHearts" class="floating-hearts" aria-hidden="true"></div>
+  <div id="floatingHearts" class="floating-hearts"></div>
+  <div id="cursorLayer" class="cursor-layer"></div>
+  <div id="landingSparkles" class="landing-sparkles"></div>
 
   <main class="page">
     <header>
       <h1>💖 Xan's Freaky Ahhh Wheel 💖</h1>
       <p class="tagline">Spin if you dare... 😈</p>
       <div class="top-tools">
-        <div class="voucher-card" aria-live="polite">
-          🎟️ Vouchers: <span id="voucherCount" class="voucher-number">0</span>
-        </div>
-        <div class="voucher-card">🦴 Good Boy Points: <span id="pointsCount" class="points-number">0</span></div>
-        <button id="storeBtn" class="store-button" type="button">🛍️ Redemption Store</button>
-        <button id="installBtn" class="install-button" type="button">📲 Install App</button>
+        <div class="pill">🎟️ Vouchers: <span id="voucherCount">0</span></div>
+        <div class="pill">🦴 Good Boy Points: <span id="pointsCount">0</span></div>
+        <button id="storeBtn" class="tool-btn">🛍️ Store</button>
+        <button id="musicBtn" class="tool-btn">🎵 Music</button>
+        <button id="achievementsBtn" class="tool-btn">🏆 Achievements</button>
+        <button id="statsBtn" class="tool-btn">📈 Stats</button>
+        <button id="installBtn" class="tool-btn">📲 Install App</button>
       </div>
-      <p class="voucher-help">You receive one new voucher each day. Every spin costs one voucher.</p>
+      <p class="voucher-help">One new voucher per day. Every spin costs one voucher.</p>
     </header>
 
     <section class="layout">
       <div class="panel wheel-panel">
         <div>
           <div class="wheel-wrap">
-            <div class="pointer" aria-hidden="true"></div>
-            <canvas id="wheel" width="900" height="900" aria-label="Prize wheel"></canvas>
-            <button id="spinBtn" class="spin-button" type="button">SPIN</button>
+            <div class="pointer"></div>
+            <canvas id="wheel" width="900" height="900"></canvas>
+            <button id="spinBtn" class="spin-button">SPIN</button>
           </div>
-          <div id="status" class="status" aria-live="polite">Add your choices, then spin the wheel.</div>
+          <div id="status" class="status">Add your choices, then spin the wheel.</div>
         </div>
       </div>
 
       <aside class="panel controls">
         <h2>Wheel Sections</h2>
-        <p class="save-note">Your changes save automatically on this device.</p>
-
-        <div class="add-row">
-          <input id="newOption" maxlength="40" placeholder="Add a new section..." aria-label="New wheel section" />
-          <button id="addBtn" class="action" type="button">Add</button>
-        </div>
-
+        <p class="save-note">Names, points and progress save automatically on this device.</p>
+        <div class="add-row"><input id="newOption" maxlength="40" placeholder="Add a new section..."><button id="addBtn" class="action">Add</button></div>
         <div id="optionList" class="option-list"></div>
-        <button id="resetBtn" class="action reset" type="button">Reset Default Sections</button>
+        <button id="resetBtn" class="action reset">Reset Default Sections</button>
       </aside>
     </section>
   </main>
 
-
-
-  <div id="storeOverlay" class="store-overlay" role="dialog" aria-modal="true">
-    <div class="store-panel">
-      <div class="store-header"><h2>🛍️ Good Boy Redemption Store</h2><button id="closeStore" class="close-store">✕</button></div>
-      <p class="store-balance">Available: <span id="storePointsCount">0</span> Good Boy Points</p>
-      <div id="rewardGrid" class="reward-grid"></div>
-      <div class="history"><h3>Recent Redemptions</h3><div id="historyList"></div></div>
-    </div>
-  </div>
-
-  <div id="noVoucherOverlay" class="winner-overlay" role="dialog" aria-modal="true" aria-labelledby="noVoucherTitle">
-    <div class="winner-card no-voucher-card">
-      <div class="winner-small">No vouchers left</div>
-      <div id="noVoucherTitle" class="winner-text">Come back tomorrow 💖</div>
-      <p id="nextVoucherText" class="next-voucher"></p>
-      <button id="closeNoVoucher" type="button">Okay</button>
-    </div>
-  </div>
-
-  <div id="winnerOverlay" class="winner-overlay" role="dialog" aria-modal="true" aria-labelledby="winnerText">
-    <div class="winner-card">
-      <div class="winner-small">The wheel chose</div>
-      <div id="winnerText" class="winner-text"></div><div id="winnerPoints" class="winner-points"></div>
-      <button id="closeWinner" type="button">Spin Again 😈</button>
-    </div>
-  </div>
-
-  <script>
-    const STORAGE_KEY = "xans-freaky-wheel-v1";
-    const VOUCHER_KEY = "xans-freaky-wheel-vouchers-v1";
-    const POINTS_KEY = "xans-good-boy-points-v1";
-    const defaults = [
-      "Kiss",
-      "Cuddle",
-      "Movie Night",
-      "Massage",
-      "Surprise Date",
-      "Truth",
-      "Dare",
-      "Ice Cream Run"
-    ];
-
-    const canvas = document.getElementById("wheel");
-    const ctx = canvas.getContext("2d");
-    const spinBtn = document.getElementById("spinBtn");
-    const addBtn = document.getElementById("addBtn");
-    const resetBtn = document.getElementById("resetBtn");
-    const newOption = document.getElementById("newOption");
-    const optionList = document.getElementById("optionList");
-    const status = document.getElementById("status");
-    const winnerOverlay = document.getElementById("winnerOverlay");
-    const winnerText = document.getElementById("winnerText");
-    const closeWinner = document.getElementById("closeWinner");
-    const voucherCount = document.getElementById("voucherCount");
-    const installBtn = document.getElementById("installBtn");
-    const noVoucherOverlay = document.getElementById("noVoucherOverlay");
-    const closeNoVoucher = document.getElementById("closeNoVoucher");
-    const nextVoucherText = document.getElementById("nextVoucherText");
-    const floatingHearts = document.getElementById("floatingHearts");
-    const pointsCount = document.getElementById("pointsCount");
-    const storePointsCount = document.getElementById("storePointsCount");
-    const storeBtn = document.getElementById("storeBtn");
-    const storeOverlay = document.getElementById("storeOverlay");
-    const closeStore = document.getElementById("closeStore");
-    const rewardGrid = document.getElementById("rewardGrid");
-    const historyList = document.getElementById("historyList");
-    const winnerPoints = document.getElementById("winnerPoints");
-
-    let deferredInstallPrompt = null;
-
-    let rotation = 0;
-    let spinning = false;
-
-
-    function localDateKey(date = new Date()) {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    }
-
-    function loadVoucherState() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(VOUCHER_KEY));
-        if (saved && Number.isFinite(saved.balance) && saved.lastGrantDate) {
-          return saved;
-        }
-      } catch (error) {}
-      return { balance: 1, lastGrantDate: localDateKey() };
-    }
-
-    let voucherState = loadVoucherState();
-
-    function daysBetweenDateKeys(startKey, endKey) {
-      const [sy, sm, sd] = startKey.split("-").map(Number);
-      const [ey, em, ed] = endKey.split("-").map(Number);
-      const start = Date.UTC(sy, sm - 1, sd);
-      const end = Date.UTC(ey, em - 1, ed);
-      return Math.max(0, Math.floor((end - start) / 86400000));
-    }
-
-    function grantDailyVouchers() {
-      const today = localDateKey();
-      const missedDays = daysBetweenDateKeys(voucherState.lastGrantDate, today);
-      if (missedDays > 0) {
-        voucherState.balance += missedDays;
-        voucherState.lastGrantDate = today;
-        saveVoucherState();
-        status.textContent = `You received ${missedDays} daily voucher${missedDays === 1 ? "" : "s"}! 🎟️`;
-      }
-      updateVoucherDisplay();
-    }
-
-    function saveVoucherState() {
-      localStorage.setItem(VOUCHER_KEY, JSON.stringify(voucherState));
-    }
-
-    function updateVoucherDisplay() {
-      voucherCount.textContent = voucherState.balance;
-      spinBtn.textContent = voucherState.balance > 0 ? "SPIN" : "NO TICKET";
-      spinBtn.setAttribute("aria-label", `${voucherState.balance} vouchers available. Spin costs one voucher.`);
-    }
-
-    function timeUntilTomorrow() {
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setHours(24, 0, 0, 0);
-      const totalMinutes = Math.max(1, Math.ceil((tomorrow - now) / 60000));
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-      return `${hours}h ${minutes}m`;
-    }
-
-    function showNoVoucherMessage() {
-      nextVoucherText.textContent = `Your next voucher arrives in about ${timeUntilTomorrow()}.`;
-      noVoucherOverlay.classList.add("show");
-    }
-
-    function createFloatingHearts() {
-      const symbols = ["💖", "💕", "💗", "💘", "💞"];
-      for (let i = 0; i < 18; i++) {
-        const heart = document.createElement("span");
-        heart.className = "heart";
-        heart.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-        heart.style.left = `${Math.random() * 100}%`;
-        heart.style.fontSize = `${18 + Math.random() * 28}px`;
-        heart.style.animationDuration = `${9 + Math.random() * 11}s`;
-        heart.style.animationDelay = `${-Math.random() * 18}s`;
-        heart.style.setProperty("--drift", `${-80 + Math.random() * 160}px`);
-        floatingHearts.appendChild(heart);
-      }
-    }
-
-    window.addEventListener("beforeinstallprompt", event => {
-      event.preventDefault();
-      deferredInstallPrompt = event;
-      installBtn.hidden = false;
-    });
-
-    window.addEventListener("appinstalled", () => {
-      deferredInstallPrompt = null;
-      installBtn.textContent = "✓ Installed";
-      installBtn.disabled = true;
-      status.textContent = "Xan's wheel was installed successfully! 💖";
-    });
-
-    installBtn.addEventListener("click", async () => {
-      if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        await deferredInstallPrompt.userChoice;
-        deferredInstallPrompt = null;
-        return;
-      }
-
-      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      status.textContent = isIOS
-        ? "On iPhone: tap Share, then choose “Add to Home Screen.”"
-        : "Use your browser menu and choose “Install app” or “Add to Home screen.”";
-    });
-
-
-    const rewards = [
-      {name:"Extra Cuddle Time",cost:25,emoji:"🫂",description:"A cozy cuddle session."},
-      {name:"Favorite Snack",cost:40,emoji:"🍫",description:"Choose a favorite snack."},
-      {name:"Movie Night Pick",cost:60,emoji:"🎬",description:"Pick the next movie."},
-      {name:"20-Minute Massage",cost:90,emoji:"💆",description:"A relaxing massage."},
-      {name:"Choose the Date",cost:125,emoji:"💖",description:"Choose the next date activity."},
-      {name:"Mystery Reward",cost:175,emoji:"🎁",description:"A surprise reward from Edward."}
-    ];
-
-    function randomPointValue(){
-      const values=[5,10,15,20,25,30];
-      return values[Math.floor(Math.random()*values.length)];
-    }
-
-    function normalizeItem(item){
-      if(typeof item==="string") return {label:item,color:randomColor(),points:randomPointValue()};
-      return {label:item.label||item.text||"Untitled",color:item.color||randomColor(),points:Number.isFinite(item.points)?item.points:randomPointValue()};
-    }
-
-    function loadPoints(){
-      try{
-        const saved=JSON.parse(localStorage.getItem(POINTS_KEY));
-        if(saved&&Number.isFinite(saved.balance)&&Array.isArray(saved.history)) return saved;
-      }catch(e){}
-      return {balance:0,history:[]};
-    }
-    let pointsState=loadPoints();
-
-    function savePoints(){localStorage.setItem(POINTS_KEY,JSON.stringify(pointsState));}
-    function updatePoints(){
-      pointsCount.textContent=pointsState.balance;
-      storePointsCount.textContent=pointsState.balance;
-      renderRewards();
-      renderHistory();
-    }
-
-    function renderRewards(){
-      rewardGrid.innerHTML="";
-      rewards.forEach(r=>{
-        const card=document.createElement("article"); card.className="reward-card";
-        card.innerHTML=`<h3>${r.emoji} ${r.name}</h3><p>${r.description}</p><div class="reward-cost">${r.cost} points</div>`;
-        const b=document.createElement("button"); b.className="redeem-btn";
-        b.textContent=pointsState.balance>=r.cost?"Redeem":"Not enough points";
-        b.disabled=pointsState.balance<r.cost;
-        b.onclick=()=>redeem(r);
-        card.appendChild(b); rewardGrid.appendChild(card);
-      });
-    }
-
-    function redeem(r){
-      if(pointsState.balance<r.cost) return;
-      if(!confirm(`Redeem "${r.name}" for ${r.cost} points?`)) return;
-      pointsState.balance-=r.cost;
-      pointsState.history.unshift({name:r.name,cost:r.cost,date:new Date().toLocaleString()});
-      pointsState.history=pointsState.history.slice(0,10);
-      savePoints(); updatePoints();
-      status.textContent=`${r.name} redeemed! Show this screen to claim it 💖`;
-    }
-
-    function renderHistory(){
-      historyList.innerHTML="";
-      if(!pointsState.history.length){
-        historyList.innerHTML='<div class="history-item">No rewards redeemed yet.</div>'; return;
-      }
-      pointsState.history.forEach(h=>{
-        const d=document.createElement("div"); d.className="history-item";
-        d.textContent=`${h.name} — ${h.cost} points — ${h.date}`; historyList.appendChild(d);
-      });
-    }
-
-    function randomColor() {
-      const hue = Math.floor(Math.random() * 360);
-      const sat = 72 + Math.floor(Math.random() * 18);
-      const light = 47 + Math.floor(Math.random() * 12);
-      return `hsl(${hue} ${sat}% ${light}%)`;
-    }
-
-    function makeItems(labels) {
-      return labels.map(label => ({ label, color: randomColor() }));
-    }
-
-    function loadItems() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (Array.isArray(saved) && saved.length >= 2) return saved;
-      } catch (error) {}
-      return makeItems(defaults);
-    }
-
-    let items = loadItems();
-
-    function saveItems() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    }
-
-    function drawWheel() {
-      const size = canvas.width;
-      const center = size / 2;
-      const radius = center - 18;
-      ctx.clearRect(0, 0, size, size);
-
-      const slice = (Math.PI * 2) / items.length;
-
-      items.forEach((item, index) => {
-        const start = index * slice - Math.PI / 2;
-        const end = start + slice;
-
-        ctx.beginPath();
-        ctx.moveTo(center, center);
-        ctx.arc(center, center, radius, start, end);
-        ctx.closePath();
-        ctx.fillStyle = item.color;
-        ctx.fill();
-
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = "rgba(255,255,255,.78)";
-        ctx.stroke();
-
-        ctx.save();
-        ctx.translate(center, center);
-        ctx.rotate(start + slice / 2);
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "#ffffff";
-        ctx.strokeStyle = "rgba(0,0,0,.38)";
-        ctx.lineWidth = 7;
-
-        const fontSize = Math.max(24, Math.min(42, 480 / Math.max(items.length, 6)));
-        ctx.font = `900 ${fontSize}px system-ui, sans-serif`;
-
-        let text = item.label;
-        const maxWidth = radius * .65;
-        while (ctx.measureText(text).width > maxWidth && text.length > 5) {
-          text = text.slice(0, -2).trim() + "…";
-        }
-
-        ctx.strokeText(text, radius - 38, 0);
-        ctx.fillText(text, radius - 38, 0);
-        ctx.restore();
-      });
-
-      ctx.beginPath();
-      ctx.arc(center, center, radius, 0, Math.PI * 2);
-      ctx.lineWidth = 14;
-      ctx.strokeStyle = "rgba(255,255,255,.9)";
-      ctx.stroke();
-    }
-
-    function renderOptions() {
-      optionList.innerHTML = "";
-
-      items.forEach((item, index) => {
-        const row = document.createElement("div");
-        row.className = "option";
-
-        const swatch = document.createElement("span");
-        swatch.className = "swatch";
-        swatch.style.background = item.color;
-        swatch.title = "Random slice color";
-
-        const input = document.createElement("input");
-        input.value = item.label;
-        input.maxLength = 40;
-        input.setAttribute("aria-label", `Edit section ${index + 1}`);
-        input.addEventListener("input", () => {
-          item.label = input.value || `Section ${index + 1}`;
-          saveItems();
-          drawWheel();
-        });
-
-        const del = document.createElement("button");
-        del.className = "delete";
-        del.type = "button";
-        del.textContent = "✕";
-        del.setAttribute("aria-label", `Delete ${item.label}`);
-        del.addEventListener("click", () => {
-          if (items.length <= 2) {
-            status.textContent = "The wheel needs at least two sections.";
-            return;
-          }
-          items.splice(index, 1);
-          saveItems();
-          renderOptions();
-          drawWheel();
-        });
-
-        row.append(swatch, input, del);
-        optionList.appendChild(row);
-      });
-    }
-
-    function addOption() {
-      const label = newOption.value.trim();
-      if (!label) {
-        newOption.focus();
-        return;
-      }
-
-      items.push({ label, color: randomColor(), points: randomPointValue() });
-      newOption.value = "";
-      saveItems();
-      renderOptions();
-      drawWheel();
-      status.textContent = `"${label}" was added and saved.`;
-      newOption.focus();
-    }
-
-    function normalizeDegrees(value) {
-      return ((value % 360) + 360) % 360;
-    }
-
-    function celebrate() {
-      const colors = ["#ff4fd8", "#a855f7", "#ffffff", "#ffd166", "#56e0ff"];
-      for (let i = 0; i < 80; i++) {
-        const piece = document.createElement("span");
-        piece.className = "confetti";
-        piece.style.left = `${Math.random() * 100}vw`;
-        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-        piece.style.animationDuration = `${2.2 + Math.random() * 2.3}s`;
-        piece.style.animationDelay = `${Math.random() * .4}s`;
-        piece.style.transform = `rotate(${Math.random() * 360}deg)`;
-        document.body.appendChild(piece);
-        setTimeout(() => piece.remove(), 5200);
-      }
-    }
-
-    function spin() {
-      grantDailyVouchers();
-      if (spinning || items.length < 2) return;
-
-      if (voucherState.balance < 1) {
-        showNoVoucherMessage();
-        return;
-      }
-
-      voucherState.balance -= 1;
-      saveVoucherState();
-      updateVoucherDisplay();
-
-      spinning = true;
-      spinBtn.disabled = true;
-      status.textContent = "The wheel is deciding... 👀";
-
-      const winnerIndex = Math.floor(Math.random() * items.length);
-      const sliceDegrees = 360 / items.length;
-      const winnerCenter = winnerIndex * sliceDegrees + sliceDegrees / 2;
-
-      const current = normalizeDegrees(rotation);
-      const desired = normalizeDegrees(360 - winnerCenter);
-      const adjustment = normalizeDegrees(desired - current);
-      const extraTurns = 6 + Math.floor(Math.random() * 3);
-
-      rotation += extraTurns * 360 + adjustment;
-      canvas.style.transform = `rotate(${rotation}deg)`;
-
-      setTimeout(() => {
-        spinning = false;
-        spinBtn.disabled = false;
-        const winningItem=items[winnerIndex];
-        winnerText.textContent=winningItem.label;
-        winnerPoints.textContent=`+${winningItem.points} Good Boy Points!`;
-        pointsState.balance+=winningItem.points;
-        savePoints(); updatePoints();
-        winnerOverlay.classList.add("show");
-        status.textContent = `Winner: ${items[winnerIndex].label} 🎉`;
-        celebrate();
-      }, 5100);
-    }
-
-    addBtn.addEventListener("click", addOption);
-    newOption.addEventListener("keydown", event => {
-      if (event.key === "Enter") addOption();
-    });
-
-    spinBtn.addEventListener("click", spin);
-
-    closeWinner.addEventListener("click", () => {
-      winnerOverlay.classList.remove("show");
-      spinBtn.focus();
-    });
-
-    winnerOverlay.addEventListener("click", event => {
-      if (event.target === winnerOverlay) winnerOverlay.classList.remove("show");
-    });
-
-    storeBtn.addEventListener("click",()=>{updatePoints();storeOverlay.classList.add("show");});
-    closeStore.addEventListener("click",()=>storeOverlay.classList.remove("show"));
-    storeOverlay.addEventListener("click",e=>{if(e.target===storeOverlay)storeOverlay.classList.remove("show");});
-
-    closeNoVoucher.addEventListener("click", () => {
-      noVoucherOverlay.classList.remove("show");
-      spinBtn.focus();
-    });
-
-    noVoucherOverlay.addEventListener("click", event => {
-      if (event.target === noVoucherOverlay) noVoucherOverlay.classList.remove("show");
-    });
-
-    resetBtn.addEventListener("click", () => {
-      items = makeItems(defaults);
-      saveItems();
-      renderOptions();
-      drawWheel();
-      status.textContent = "Default sections restored with new random colors.";
-    });
-
-    createFloatingHearts();
-    grantDailyVouchers();
-    updatePoints();
-    renderOptions();
-    drawWheel();
-
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker.js").catch(() => {
-          status.textContent = "The site works, but offline installation could not be enabled.";
-        });
-      });
-    }
-  </script>
+  <aside id="musicPanel" class="music-panel">
+    <div class="modal-head"><strong>🎵 Xan's Playlist</strong><button id="closeMusic" class="close">✕</button></div>
+    <p style="color:#decce4">Press play in Spotify to start listening.</p>
+    <iframe src="https://open.spotify.com/embed/playlist/4S7uiPc8OAv5GxtvgJ5tBc?utm_source=generator&theme=0" height="352" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+  </aside>
+
+  <div id="storeOverlay" class="overlay"><div class="modal">
+    <div class="modal-head"><h2>🛍️ Good Boy Redemption Store</h2><button class="close" data-close="storeOverlay">✕</button></div>
+    <p style="font-weight:900;color:var(--mint)">Available: <span id="storePointsCount">0</span> points</p>
+    <div id="rewardGrid" class="reward-grid"></div>
+    <div class="history"><h3>Recent Redemptions</h3><div id="historyList"></div></div>
+  </div></div>
+
+  <div id="achievementOverlay" class="overlay"><div class="modal">
+    <div class="modal-head"><h2>🏆 Achievements</h2><button class="close" data-close="achievementOverlay">✕</button></div>
+    <div id="achievementGrid" class="achievement-grid"></div>
+  </div></div>
+
+  <div id="statsOverlay" class="overlay"><div class="modal">
+    <div class="modal-head"><h2>📈 Lifetime Stats</h2><button class="close" data-close="statsOverlay">✕</button></div>
+    <div id="statsGrid" class="stats-grid"></div>
+    <div class="history"><h3>Most-Landed Results</h3><div id="resultStats"></div></div>
+  </div></div>
+
+  <div id="winnerOverlay" class="overlay"><div class="winner-card">
+    <div class="winner-small">The wheel chose</div><div id="winnerText" class="winner-text"></div>
+    <div id="winnerPoints" class="winner-points"></div><button data-close="winnerOverlay">Spin Again 😈</button>
+  </div></div>
+
+  <div id="noVoucherOverlay" class="overlay"><div class="winner-card">
+    <div class="winner-small">No vouchers left</div><div class="winner-text">Come back tomorrow 💖</div>
+    <p id="nextVoucherText"></p><button data-close="noVoucherOverlay">Okay</button>
+  </div></div>
+
+  <div id="unlockOverlay" class="overlay"><div class="winner-card unlock-card">
+    <div class="winner-small">Reward unlocked</div><div id="unlockText" class="winner-text"></div>
+    <div id="unlockSubtext" class="winner-points"></div><button data-close="unlockOverlay">Claimed 💖</button>
+  </div></div>
+
+<script>
+const STORAGE_KEY="xans-freaky-wheel-v1",VOUCHER_KEY="xans-freaky-wheel-vouchers-v1",POINTS_KEY="xans-good-boy-points-v1",STATS_KEY="xans-wheel-stats-v1",MUSIC_KEY="xans-music-panel-open-v1";
+const defaults=["Kiss","Cuddle","Movie Night","Massage","Surprise Date","Truth","Dare","Ice Cream Run"];
+const rewards=[
+ {name:"Extra Cuddle Time",cost:25,emoji:"🫂",description:"A cozy cuddle session.",image:"assets/rewards/cuddle.png"},
+ {name:"Favorite Snack",cost:40,emoji:"🍫",description:"Choose a favorite snack.",image:"assets/rewards/snack.png"},
+ {name:"Movie Night Pick",cost:60,emoji:"🎬",description:"Pick the next movie.",image:"assets/rewards/movie.png"},
+ {name:"20-Minute Massage",cost:90,emoji:"💆",description:"A relaxing massage.",image:"assets/rewards/massage.png"},
+ {name:"Choose the Date",cost:125,emoji:"💖",description:"Choose the next date activity.",image:"assets/rewards/date.png"},
+ {name:"Mystery Reward",cost:175,emoji:"🎁",description:"A surprise reward from Edward.",image:"assets/rewards/mystery.png"}];
+const achievements=[
+ {id:"first",icon:"🎡",name:"First Spin",description:"Spin the wheel once.",test:s=>s.totalSpins>=1},
+ {id:"ten",icon:"🔟",name:"Wheel Regular",description:"Complete 10 spins.",test:s=>s.totalSpins>=10},
+ {id:"hundred",icon:"🦴",name:"Good Boy",description:"Earn 100 lifetime points.",test:s=>s.totalPointsEarned>=100},
+ {id:"spender",icon:"🛍️",name:"Treat Yourself",description:"Redeem your first reward.",test:s=>s.rewardsRedeemed>=1},
+ {id:"collector",icon:"🏆",name:"Reward Collector",description:"Redeem 5 rewards.",test:s=>s.rewardsRedeemed>=5},
+ {id:"lucky",icon:"✨",name:"Big Winner",description:"Land on a 30-point section.",test:s=>s.bigWins>=1}];
+
+const $=id=>document.getElementById(id);
+const canvas=$("wheel"),ctx=canvas.getContext("2d"),spinBtn=$("spinBtn"),status=$("status");
+let rotation=0,spinning=false,deferredInstallPrompt=null;
+
+function randomColor(){return `hsl(${Math.floor(Math.random()*360)} ${72+Math.floor(Math.random()*17)}% ${47+Math.floor(Math.random()*12)}%)`}
+function randomPoints(){return [5,10,15,20,25,30][Math.floor(Math.random()*6)]}
+function normalizeItem(x){return typeof x==="string"?{label:x,color:randomColor(),points:randomPoints()}:{label:x.label||"Untitled",color:x.color||randomColor(),points:Number.isFinite(x.points)?x.points:randomPoints()}}
+function makeItems(a){return a.map(x=>({label:x,color:randomColor(),points:randomPoints()}))}
+function loadItems(){try{let x=JSON.parse(localStorage.getItem(STORAGE_KEY));if(Array.isArray(x)&&x.length>=2)return x.map(normalizeItem)}catch(e){}return makeItems(defaults)}
+let items=loadItems();
+function saveItems(){localStorage.setItem(STORAGE_KEY,JSON.stringify(items))}
+
+function dateKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function loadVoucher(){try{let x=JSON.parse(localStorage.getItem(VOUCHER_KEY));if(x&&Number.isFinite(x.balance)&&x.lastGrantDate)return x}catch(e){}return{balance:1,lastGrantDate:dateKey()}}
+let voucher=loadVoucher();
+function grantDaily(){let today=new Date(dateKey()+"T00:00:00"),last=new Date(voucher.lastGrantDate+"T00:00:00"),days=Math.floor((today-last)/86400000);if(days>0){voucher.balance+=days;voucher.lastGrantDate=dateKey();saveVoucher()}updateVoucher()}
+function saveVoucher(){localStorage.setItem(VOUCHER_KEY,JSON.stringify(voucher))}
+function updateVoucher(){$("voucherCount").textContent=voucher.balance;spinBtn.textContent=voucher.balance?"SPIN":"NO TICKET"}
+
+function loadPoints(){try{let x=JSON.parse(localStorage.getItem(POINTS_KEY));if(x&&Number.isFinite(x.balance)&&Array.isArray(x.history))return x}catch(e){}return{balance:0,history:[]}}
+let points=loadPoints();
+function savePoints(){localStorage.setItem(POINTS_KEY,JSON.stringify(points))}
+function updatePoints(){$("pointsCount").textContent=points.balance;$("storePointsCount").textContent=points.balance;renderRewards();renderHistory()}
+
+function loadStats(){try{let x=JSON.parse(localStorage.getItem(STATS_KEY));if(x)return Object.assign({totalSpins:0,totalPointsEarned:0,rewardsRedeemed:0,bigWins:0,results:{},unlocked:[]},x)}catch(e){}return{totalSpins:0,totalPointsEarned:0,rewardsRedeemed:0,bigWins:0,results:{},unlocked:[]}}
+let stats=loadStats();
+function saveStats(){localStorage.setItem(STATS_KEY,JSON.stringify(stats))}
+function checkAchievements(){let fresh=[];achievements.forEach(a=>{if(a.test(stats)&&!stats.unlocked.includes(a.id)){stats.unlocked.push(a.id);fresh.push(a)}});saveStats();renderAchievements();return fresh}
+function renderAchievements(){$("achievementGrid").innerHTML="";achievements.forEach(a=>{let unlocked=stats.unlocked.includes(a.id),d=document.createElement("article");d.className="achievement-card"+(unlocked?" unlocked":"");d.innerHTML=`<div class="achievement-icon">${unlocked?a.icon:"🔒"}</div><h3>${a.name}</h3><p>${a.description}</p><strong>${unlocked?"Unlocked":"Locked"}</strong>`;$("achievementGrid").appendChild(d)})}
+function renderStats(){
+ const favorite=Object.entries(stats.results).sort((a,b)=>b[1]-a[1])[0]||["None yet",0];
+ $("statsGrid").innerHTML=[
+  ["Total Spins",stats.totalSpins],["Points Earned",stats.totalPointsEarned],["Rewards Redeemed",stats.rewardsRedeemed],["Favorite Result",favorite[0]]
+ ].map(([a,b])=>`<article class="stat-card"><div class="stat-number">${b}</div><strong>${a}</strong></article>`).join("");
+ $("resultStats").innerHTML=Object.entries(stats.results).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<div class="history-item">${n} — ${c} time${c===1?"":"s"}</div>`).join("")||'<div class="history-item">No spins yet.</div>';
+}
+
+function drawWheel(){
+ let size=canvas.width,c=size/2,r=c-18,slice=Math.PI*2/items.length;ctx.clearRect(0,0,size,size);
+ items.forEach((it,i)=>{let start=i*slice-Math.PI/2,end=start+slice;ctx.beginPath();ctx.moveTo(c,c);ctx.arc(c,c,r,start,end);ctx.closePath();ctx.fillStyle=it.color;ctx.fill();ctx.lineWidth=5;ctx.strokeStyle="rgba(255,255,255,.78)";ctx.stroke();
+ ctx.save();ctx.translate(c,c);ctx.rotate(start+slice/2);ctx.textAlign="right";ctx.textBaseline="middle";ctx.fillStyle="#fff";ctx.strokeStyle="rgba(0,0,0,.38)";ctx.lineWidth=7;ctx.font=`900 ${Math.max(22,Math.min(39,460/Math.max(items.length,6)))}px system-ui`;let text=`${it.label} • ${it.points} pts`;while(ctx.measureText(text).width>r*.68&&text.length>7)text=text.slice(0,-2).trim()+"…";ctx.strokeText(text,r-35,0);ctx.fillText(text,r-35,0);ctx.restore()});
+ ctx.beginPath();ctx.arc(c,c,r,0,Math.PI*2);ctx.lineWidth=14;ctx.strokeStyle="rgba(255,255,255,.9)";ctx.stroke()
+}
+function renderOptions(){
+ $("optionList").innerHTML="";items.forEach((it,i)=>{let row=document.createElement("div");row.className="option";let s=document.createElement("span");s.className="swatch";s.style.background=it.color;let input=document.createElement("input");input.value=it.label;input.oninput=()=>{it.label=input.value||`Section ${i+1}`;saveItems();drawWheel()};let p=document.createElement("span");p.className="option-points";p.textContent=`${it.points} pts`;let del=document.createElement("button");del.className="delete";del.textContent="✕";del.onclick=()=>{if(items.length<=2)return status.textContent="The wheel needs at least two sections.";items.splice(i,1);saveItems();renderOptions();drawWheel()};row.append(s,input,p,del);$("optionList").appendChild(row)})
+}
+function renderRewards(){
+ $("rewardGrid").innerHTML="";rewards.forEach(r=>{let card=document.createElement("article");card.className="reward-card";card.innerHTML=`<img src="${r.image}" alt=""><div class="reward-body"><h3>${r.emoji} ${r.name}</h3><p>${r.description}</p><div class="cost">${r.cost} points</div></div>`;let b=document.createElement("button");b.className="redeem";b.textContent=points.balance>=r.cost?"Redeem":"Not enough points";b.disabled=points.balance<r.cost;b.onclick=()=>redeem(r);card.querySelector(".reward-body").appendChild(b);$("rewardGrid").appendChild(card)})
+}
+function redeem(r){
+ if(points.balance<r.cost||!confirm(`Redeem "${r.name}" for ${r.cost} points?`))return;
+ points.balance-=r.cost;points.history.unshift({name:r.name,cost:r.cost,date:new Date().toLocaleString()});points.history=points.history.slice(0,10);stats.rewardsRedeemed++;savePoints();saveStats();updatePoints();checkAchievements();
+ $("unlockText").textContent=`${r.emoji} ${r.name}`;$("unlockSubtext").textContent=`${r.cost} points redeemed — show this screen to claim it.`;openOverlay("unlockOverlay");playTone(620,.13);setTimeout(()=>playTone(820,.18),120);burstSparkles(innerWidth/2,innerHeight/2,48)
+}
+function renderHistory(){$("historyList").innerHTML=points.history.map(h=>`<div class="history-item">${h.name} — ${h.cost} points — ${h.date}</div>`).join("")||'<div class="history-item">No rewards redeemed yet.</div>'}
+
+function openOverlay(id){$(id).classList.add("show")}
+function closeOverlay(id){$(id).classList.remove("show")}
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>closeOverlay(b.dataset.close));
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)o.classList.remove("show")}));
+
+function playTone(freq,dur){try{let A=window.AudioContext||window.webkitAudioContext,a=new A(),o=a.createOscillator(),g=a.createGain();o.frequency.value=freq;o.type="sine";g.gain.setValueAtTime(.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(.08,a.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur+.03)}catch(e){}}
+function burstSparkles(x,y,count=30){for(let i=0;i<count;i++){let s=document.createElement("span");s.className="spark";s.style.left=x+"px";s.style.top=y+"px";let a=Math.random()*Math.PI*2,d=55+Math.random()*190;s.style.setProperty("--x",Math.cos(a)*d+"px");s.style.setProperty("--y",Math.sin(a)*d+"px");s.style.background=["#fff","#ffe46b","#ff4fd8","#8fffd1"][Math.floor(Math.random()*4)];document.body.appendChild(s);setTimeout(()=>s.remove(),950)}}
+function spin(){
+ grantDaily();if(spinning||items.length<2)return;if(voucher.balance<1){let n=new Date();n.setHours(24,0,0,0);$("nextVoucherText").textContent=`Next voucher in about ${Math.ceil((n-Date.now())/3600000)} hour(s).`;return openOverlay("noVoucherOverlay")}
+ voucher.balance--;saveVoucher();updateVoucher();spinning=true;spinBtn.disabled=true;status.textContent="The wheel is deciding... 👀";playTone(180,.08);
+ let wi=Math.floor(Math.random()*items.length),sd=360/items.length,wc=wi*sd+sd/2,current=((rotation%360)+360)%360,desired=((360-wc)%360+360)%360,adjust=((desired-current)%360+360)%360;rotation+=(6+Math.floor(Math.random()*3))*360+adjust;canvas.style.transform=`rotate(${rotation}deg)`;
+ setTimeout(()=>{spinning=false;spinBtn.disabled=false;let win=items[wi];points.balance+=win.points;stats.totalSpins++;stats.totalPointsEarned+=win.points;stats.results[win.label]=(stats.results[win.label]||0)+1;if(win.points===30)stats.bigWins++;savePoints();saveStats();updatePoints();$("winnerText").textContent=win.label;$("winnerPoints").textContent=`+${win.points} Good Boy Points!`;openOverlay("winnerOverlay");status.textContent=`Winner: ${win.label} 🎉`;playTone(520,.13);setTimeout(()=>playTone(760,.18),130);burstSparkles(innerWidth/2,innerHeight*.44,55);let fresh=checkAchievements();if(fresh.length)setTimeout(()=>status.textContent=`Achievement unlocked: ${fresh.map(x=>x.name).join(", ")} 🏆`,550)},5100)
+}
+
+$("addBtn").onclick=()=>{let label=$("newOption").value.trim();if(!label)return $("newOption").focus();items.push({label,color:randomColor(),points:randomPoints()});$("newOption").value="";saveItems();renderOptions();drawWheel();status.textContent=`"${label}" added.`};
+$("newOption").addEventListener("keydown",e=>{if(e.key==="Enter")$("addBtn").click()});
+$("resetBtn").onclick=()=>{items=makeItems(defaults);saveItems();renderOptions();drawWheel();status.textContent="Default sections restored with new random points."};
+spinBtn.onclick=spin;
+$("storeBtn").onclick=()=>{updatePoints();openOverlay("storeOverlay")};
+$("achievementsBtn").onclick=()=>{renderAchievements();openOverlay("achievementOverlay")};
+$("statsBtn").onclick=()=>{renderStats();openOverlay("statsOverlay")};
+$("musicBtn").onclick=()=>{let p=$("musicPanel");p.classList.toggle("open");localStorage.setItem(MUSIC_KEY,p.classList.contains("open")?"1":"0")};
+$("closeMusic").onclick=()=>{$("musicPanel").classList.remove("open");localStorage.setItem(MUSIC_KEY,"0")};
+
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstallPrompt=e;$("installBtn").hidden=false});
+$("installBtn").onclick=async()=>{if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null}else alert("Use your browser menu and choose Add to Home Screen or Install App.")};
+if(localStorage.getItem(MUSIC_KEY)==="1")$("musicPanel").classList.add("open");
+
+let lastTrail=0;document.addEventListener("pointermove",e=>{if(Date.now()-lastTrail<55)return;lastTrail=Date.now();let h=document.createElement("span");h.className="cursor-heart";h.textContent=Math.random()>.5?"💗":"✨";h.style.left=e.clientX+"px";h.style.top=e.clientY+"px";document.body.appendChild(h);setTimeout(()=>h.remove(),850)});
+function floating(){let h=document.createElement("span");h.className="heart";h.textContent=["💗","💖","💕","✨"][Math.floor(Math.random()*4)];h.style.left=Math.random()*100+"vw";h.style.fontSize=14+Math.random()*24+"px";h.style.animationDuration=7+Math.random()*7+"s";$("floatingHearts").appendChild(h);setTimeout(()=>h.remove(),14500)}
+setInterval(floating,650);for(let i=0;i<10;i++)setTimeout(floating,i*180);
+
+grantDaily();updatePoints();renderOptions();drawWheel();renderAchievements();
+if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
+</script>
 </body>
 </html>
