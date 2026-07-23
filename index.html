@@ -84,7 +84,14 @@
     .stat-card{padding:18px;text-align:center}.stat-number{font-size:2rem;font-weight:1000;color:var(--mint)}
     @media(max-width:860px){.layout{grid-template-columns:1fr}.controls{order:-1}}
     @media(max-width:520px){.page{width:min(100% - 14px,1180px);padding-top:16px}.panel{padding:13px}.spin-button{width:94px;height:94px}}
-  </style>
+  
+.inventory-list{display:grid;gap:12px;margin-top:14px}
+.inventory-empty{opacity:.72;text-align:center;padding:18px;border:1px dashed rgba(255,255,255,.28);border-radius:16px}
+.inventory-item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:14px;border-radius:18px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15)}
+.inventory-title{font-weight:800}.inventory-meta{font-size:.84rem;opacity:.75;margin-top:4px}
+.inventory-redeem{border:0;border-radius:999px;padding:10px 15px;font-weight:900;cursor:pointer;background:linear-gradient(135deg,#ff4fd8,#9b5de5);color:#fff}
+.inventory-badge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.14);font-size:.76rem}
+</style>
 </head>
 <body>
   <div id="floatingHearts" class="floating-hearts"></div>
@@ -126,7 +133,13 @@
         <p class="save-note">To change the shared wheel, edit <strong>wheel-options.json</strong> in GitHub.</p>
       </aside>
     </section>
-  </main>
+  
+<section class="panel">
+<h2>🎁 Reward Inventory</h2>
+<p class="save-note">Rewards you spin are saved here and can be redeemed whenever you choose.</p>
+<div id="inventoryList" class="inventory-list"></div>
+</section>
+</main>
 
   <aside id="musicPanel" class="music-panel">
     <div class="modal-head"><strong>🎵 Xan's Playlist</strong><button id="closeMusic" class="close">✕</button></div>
@@ -168,7 +181,7 @@
   </div></div>
 
 <script>
-const VOUCHER_KEY="xans-freaky-wheel-vouchers-v1",POINTS_KEY="xans-good-boy-points-v1",STATS_KEY="xans-wheel-stats-v1",MUSIC_KEY="xans-music-panel-open-v1";
+const INVENTORY_KEY="xans-reward-inventory-v1",VOUCHER_KEY="xans-freaky-wheel-vouchers-v1",POINTS_KEY="xans-good-boy-points-v1",STATS_KEY="xans-wheel-stats-v1",MUSIC_KEY="xans-music-panel-open-v1";
 const defaults=["Kiss","Cuddle","Movie Night","Massage","Surprise Date","Truth","Dare","Ice Cream Run"];
 const rewards=[
  {name:"Extra Cuddle Time",cost:25,emoji:"🫂",description:"A cozy cuddle session.",image:"assets/rewards/cuddle.png"},
@@ -193,6 +206,12 @@ function randomColor(){return `hsl(${Math.floor(Math.random()*360)} ${72+Math.fl
 function randomPoints(){return [5,10,15,20,25,30][Math.floor(Math.random()*6)]}
 function normalizeItem(x){return typeof x==="string"?{label:x,color:randomColor(),points:randomPoints()}:{label:x.label||"Untitled",color:x.color||randomColor(),points:Number.isFinite(x.points)?x.points:randomPoints()}}
 let items=defaults.map((label,i)=>({label,color:["#ff4fd8","#9b5de5","#00bbf9","#f15bb5","#fee440","#00f5d4","#fb5607","#8338ec"][i],points:[10,15,20,25,30,5,20,15][i]}));
+let rewardInventory=JSON.parse(localStorage.getItem(INVENTORY_KEY)||"[]");
+function saveInventory(){localStorage.setItem(INVENTORY_KEY,JSON.stringify(rewardInventory))}
+function addToInventory(win){rewardInventory.unshift({id:`${Date.now()}-${Math.random().toString(16).slice(2)}`,label:win.label,points:win.points,earnedAt:new Date().toISOString()});saveInventory();renderInventory()}
+function redeemInventoryReward(id){const item=rewardInventory.find(x=>x.id===id);if(!item)return;if(!confirm(`Redeem "${item.label}" now?`))return;rewardInventory=rewardInventory.filter(x=>x.id!==id);saveInventory();renderInventory();status.textContent=`Redeemed: ${item.label} 💖`}
+function renderInventory(){const list=$("inventoryList");if(!list)return;list.innerHTML="";if(!rewardInventory.length){let e=document.createElement("div");e.className="inventory-empty";e.textContent="No rewards saved yet. Spin the wheel to earn one! ✨";list.appendChild(e);return}rewardInventory.forEach(item=>{let row=document.createElement("div");row.className="inventory-item";let info=document.createElement("div");let title=document.createElement("div");title.className="inventory-title";title.textContent=item.label;let badge=document.createElement("span");badge.className="inventory-badge";badge.textContent=`${item.points} pts`;title.appendChild(badge);let meta=document.createElement("div");meta.className="inventory-meta";let d=new Date(item.earnedAt);meta.textContent=`Earned ${d.toLocaleDateString()} at ${d.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}`;info.append(title,meta);let btn=document.createElement("button");btn.className="inventory-redeem";btn.textContent="Redeem";btn.onclick=()=>redeemInventoryReward(item.id);row.append(info,btn);list.appendChild(row)})}
+
 async function loadSharedItems(){
   try{
     const response=await fetch("./wheel-options.json",{cache:"no-store"});
@@ -269,7 +288,7 @@ function spin(){
  grantDaily();if(spinning||items.length<2)return;if(voucher.balance<1){let n=new Date();n.setHours(24,0,0,0);$("nextVoucherText").textContent=`Next voucher in about ${Math.ceil((n-Date.now())/3600000)} hour(s).`;return openOverlay("noVoucherOverlay")}
  voucher.balance--;saveVoucher();updateVoucher();spinning=true;spinBtn.disabled=true;status.textContent="The wheel is deciding... 👀";playTone(180,.08);
  let wi=Math.floor(Math.random()*items.length),sd=360/items.length,wc=wi*sd+sd/2,current=((rotation%360)+360)%360,desired=((360-wc)%360+360)%360,adjust=((desired-current)%360+360)%360;rotation+=(6+Math.floor(Math.random()*3))*360+adjust;canvas.style.transform=`rotate(${rotation}deg)`;
- setTimeout(()=>{spinning=false;spinBtn.disabled=false;let win=items[wi];points.balance+=win.points;stats.totalSpins++;stats.totalPointsEarned+=win.points;stats.results[win.label]=(stats.results[win.label]||0)+1;if(win.points===30)stats.bigWins++;savePoints();saveStats();updatePoints();$("winnerText").textContent=win.label;$("winnerPoints").textContent=`Surprise! +${win.points} Good Boy Points!`;openOverlay("winnerOverlay");status.textContent=`Winner: ${win.label} 🎉`;playTone(520,.13);setTimeout(()=>playTone(760,.18),130);burstSparkles(innerWidth/2,innerHeight*.44,55);let fresh=checkAchievements();if(fresh.length)setTimeout(()=>status.textContent=`Achievement unlocked: ${fresh.map(x=>x.name).join(", ")} 🏆`,550)},5100)
+ setTimeout(()=>{spinning=false;spinBtn.disabled=false;let win=items[wi];points.balance+=win.points;stats.totalSpins++;stats.totalPointsEarned+=win.points;stats.results[win.label]=(stats.results[win.label]||0)+1;if(win.points===30)stats.bigWins++;savePoints();saveStats();updatePoints();$("winnerText").textContent=win.label;$("winnerPoints").textContent=`Surprise! +${win.points} Good Boy Points!`;addToInventory(win);openOverlay("winnerOverlay");status.textContent=`Winner: ${win.label} 🎉`;playTone(520,.13);setTimeout(()=>playTone(760,.18),130);burstSparkles(innerWidth/2,innerHeight*.44,55);let fresh=checkAchievements();if(fresh.length)setTimeout(()=>status.textContent=`Achievement unlocked: ${fresh.map(x=>x.name).join(", ")} 🏆`,550)},5100)
 }
 
 spinBtn.onclick=spin;
@@ -287,7 +306,7 @@ let lastTrail=0;document.addEventListener("pointermove",e=>{if(Date.now()-lastTr
 function floating(){let h=document.createElement("span");h.className="heart";h.textContent=["💗","💖","💕","✨"][Math.floor(Math.random()*4)];h.style.left=Math.random()*100+"vw";h.style.fontSize=14+Math.random()*24+"px";h.style.animationDuration=7+Math.random()*7+"s";$("floatingHearts").appendChild(h);setTimeout(()=>h.remove(),14500)}
 setInterval(floating,650);for(let i=0;i<10;i++)setTimeout(floating,i*180);
 
-grantDaily();updatePoints();renderAchievements();loadSharedItems();
+grantDaily();updatePoints();renderAchievements();renderInventory();loadSharedItems();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
 </script>
 </body>
