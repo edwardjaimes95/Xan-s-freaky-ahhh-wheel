@@ -38,11 +38,10 @@
     "label": "Ice Cream Run",
     "color": "#8338ec",
     "points": 15
-  }
-  },
+  }, 
   {
     "label": "Impact Session (Xan Style)",
     "color": "#ff006e",
     "points": 30
-  }
+  }, 
 ]
