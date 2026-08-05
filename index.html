@@ -214,14 +214,14 @@ function renderInventory(){const list=$("inventoryList");if(!list)return;list.in
 
 async function loadSharedItems(){
   try{
-    const response=await fetch("./wheel-options.json",{cache:"no-store"});
+    const response=await fetch(`./wheel-options.json?v=${Date.now()}`,{cache:"no-store"});
     if(!response.ok)throw new Error("Could not load shared wheel");
     const data=await response.json();
     if(!Array.isArray(data)||data.length<2)throw new Error("Shared wheel needs at least two sections");
     items=data.map(normalizeItem);
     status.textContent="Shared wheel loaded for every device. 💖";
   }catch(error){
-    status.textContent="Using the bundled shared wheel.";
+    status.textContent=`Could not load the shared wheel: ${error.message}`;
   }
   renderOptions();
   drawWheel();
