@@ -119,6 +119,22 @@
 .roulette-stage.spinning .roulette-ball-track{animation:rouletteSynchronized 5.1s cubic-bezier(.12,.72,.12,1) forwards}
 .roulette-hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;width:18%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 28%,#fff3c8,#cba35d 42%,#5e3820 75%,#f8dfa0 80%);border:3px solid #f6dfa2;box-shadow:0 4px 12px #0009;pointer-events:none}
 @keyframes rouletteSynchronized{0%{transform:rotate(0deg)}65%{transform:rotate(1260deg)}84%{transform:rotate(1620deg)}100%{transform:rotate(1800deg)}}
+
+/* Daily position card */
+.position-day{margin:18px 0 22px;position:relative;overflow:hidden;background:linear-gradient(125deg,rgba(255,79,216,.18),rgba(124,58,237,.28),rgba(255,228,107,.10));border:1px solid rgba(255,228,107,.38);}
+.position-day::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 90% 0,rgba(255,228,107,.18),transparent 42%);pointer-events:none}
+.position-day-inner{position:relative;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.position-eyebrow{font-size:.78rem;letter-spacing:.15em;text-transform:uppercase;font-weight:950;color:var(--gold)}
+.position-title{font-size:clamp(1.6rem,4vw,2.7rem);line-height:1.1;margin:8px 0 10px;font-weight:1000;text-shadow:0 0 20px #ff4fd855}
+.position-meta{color:#e7d6ed;margin:0 0 12px}
+.position-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.position-link{display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:white;font-weight:900;padding:10px 14px;border-radius:999px;background:linear-gradient(135deg,var(--pink),var(--purple));}
+.position-check{display:flex;gap:9px;align-items:center;padding:10px 14px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(0,0,0,.18);font-weight:850;cursor:pointer}
+.position-check input{width:18px;height:18px;accent-color:#ff4fd8}
+.position-progress{font-size:.86rem;color:#d9c5e2;margin-top:12px}
+.position-done{font-weight:900;color:var(--mint);font-size:1.1rem}
+@media(max-width:600px){.position-day-inner{grid-template-columns:1fr}.position-actions{align-items:stretch}.position-link,.position-check{justify-content:center}}
+
 </style>
 </head>
 <body>
@@ -141,6 +157,19 @@
       </div>
       <p class="voucher-help">One new voucher per day. Every spin costs one voucher.</p>
     </header>
+
+    <section class="panel position-day" aria-labelledby="positionDayHeading">
+      <div class="position-day-inner">
+        <div>
+          <div class="position-eyebrow" id="positionDayHeading">🔥 Sex Position of the Day</div>
+          <div id="positionDayName" class="position-title">Loading today's pick…</div>
+          <p id="positionDayDescription" class="position-meta">A new pick from the position pool each day.</p>
+          <div class="position-actions" id="positionDayActions"></div>
+          <div id="positionDayProgress" class="position-progress"></div>
+        </div>
+        <div aria-hidden="true" style="font-size:clamp(3rem,8vw,5.5rem);filter:drop-shadow(0 0 18px #ff4fd866);text-align:center">💋</div>
+      </div>
+    </section>
 
     <section class="layout">
       <div class="panel wheel-panel">
@@ -316,6 +345,44 @@ document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",e=>{
 
 function playTone(freq,dur){try{let A=window.AudioContext||window.webkitAudioContext,a=new A(),o=a.createOscillator(),g=a.createGain();o.frequency.value=freq;o.type="sine";g.gain.setValueAtTime(.0001,a.currentTime);g.gain.exponentialRampToValueAtTime(.08,a.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur+.03)}catch(e){}}
 function burstSparkles(x,y,count=30){for(let i=0;i<count;i++){let s=document.createElement("span");s.className="spark";s.style.left=x+"px";s.style.top=y+"px";let a=Math.random()*Math.PI*2,d=55+Math.random()*190;s.style.setProperty("--x",Math.cos(a)*d+"px");s.style.setProperty("--y",Math.sin(a)*d+"px");s.style.background=["#fff","#ffe46b","#ff4fd8","#8fffd1"][Math.floor(Math.random()*4)];document.body.appendChild(s);setTimeout(()=>s.remove(),950)}}
+
+// Daily position pool based on titles featured in the linked catalog and its popular-position list.
+const POSITION_CATALOG_URL="https://sexpositions.club/positions";
+const POSITION_POOL_KEY="xans-sex-position-pool-v1";
+const POSITION_DAY_KEY="xans-sex-position-day-v1";
+const SOURCE_POSITIONS=[
+ [519,"Revelation"],[518,"Fireman"],[517,"Woven rose"],[516,"Pussy licking"],[515,"Crazy train"],[514,"Special fellatio"],[513,"Wheelbarrow – 2"],[512,"Venus flytrap"],[511,"Donkey punch"],[510,"Dream"],[509,"Tea bag – 2"],[508,"Houdini"],[507,"Butler"],[506,"Crazy monkey"],[505,"Weird fantasy"],[504,"Breeze"],[503,"Insatiable clitoris"],[502,"Khaleesi"],[501,"Curiosity"],[500,"Anna"],[499,"Pearl"],[498,"Crazy doggy"],[497,"Tantra chair"],[496,"Doggy on the edge – 2"],[495,"Ghetto"],[494,"Twerk on dick"],[490,"Snake charmer"],[489,"Chibi"],[488,"Hot carl"],[487,"Apex"],[486,"Source"],[485,"Descent"],[484,"Licking master"],[483,"Catapult"],[482,"Stickman"],[481,"New 69 on the chair"],[480,"Juicy ass"],[479,"Ladies’ man"],[478,"Exciting game"],[477,"Tea bag"],[476,"Harp"],[475,"Funny joke"],[474,"Slope"],[473,"Loop"],[472,"Pinwheel"],[471,"Gimlet"],[470,"Relaxation"],[469,"Tight pussy"],[468,"Niagara falls"],[467,"Rocket"]
+].map(([number,name])=>({id:String(number),name,number}));
+const POPULAR_POSITIONS=["Missionary","Doggy style","Cowgirl","69","Prone bone","Reverse cowgirl","Amazon","Lotus","Butterfly","Spooning","Scissor","CAT","Helicopter","Pretzel","Full nelson","Piledriver","Wheelbarrow","Eiffel tower"];
+const ALL_POSITION_CHOICES=[...SOURCE_POSITIONS,...POPULAR_POSITIONS.map((name,i)=>({id:`popular-${i}`,name,number:null}))];
+function loadPositionState(){try{const saved=JSON.parse(localStorage.getItem(POSITION_POOL_KEY));if(saved&&Array.isArray(saved.completed))return saved}catch(e){}return{completed:[]}}
+let positionState=loadPositionState();
+function savePositionState(){localStorage.setItem(POSITION_POOL_KEY,JSON.stringify(positionState))}
+function getDailyPosition(){
+ const today=dateKey();let dayState;
+ try{dayState=JSON.parse(localStorage.getItem(POSITION_DAY_KEY)||"null")}catch(e){}
+ if(dayState&&dayState.date===today&&ALL_POSITION_CHOICES.some(p=>p.id===dayState.id))return ALL_POSITION_CHOICES.find(p=>p.id===dayState.id);
+ const remaining=ALL_POSITION_CHOICES.filter(p=>!positionState.completed.includes(p.id));
+ if(!remaining.length)return null;
+ const picked=remaining[Math.floor(Math.random()*remaining.length)];
+ localStorage.setItem(POSITION_DAY_KEY,JSON.stringify({date:today,id:picked.id}));return picked;
+}
+function renderPositionOfDay(){
+ const nameEl=$("positionDayName"),descEl=$("positionDayDescription"),actions=$("positionDayActions"),progress=$("positionDayProgress");
+ actions.innerHTML="";
+ const remaining=ALL_POSITION_CHOICES.filter(p=>!positionState.completed.includes(p.id));
+ const picked=getDailyPosition();
+ progress.textContent=`${positionState.completed.length} completed · ${remaining.length} left in this device’s pool`;
+ if(!picked){nameEl.textContent="You cleared the whole pool! 🎉";descEl.textContent="Every position in this built-in pool has been checked off.";actions.innerHTML=`<button class="action" id="resetPositionPool">Start a fresh pool</button>`;$("resetPositionPool").onclick=()=>{if(confirm("Reset all completed positions and start a fresh pool?")){positionState={completed:[]};savePositionState();localStorage.removeItem(POSITION_DAY_KEY);renderPositionOfDay()}};return}
+ nameEl.textContent=picked.number?`#${picked.number} · ${picked.name}`:picked.name;
+ let dayState;try{dayState=JSON.parse(localStorage.getItem(POSITION_DAY_KEY)||"null")}catch(e){}
+ const isDone=!!(dayState&&dayState.date===dateKey()&&dayState.id===picked.id&&dayState.done);
+ descEl.textContent=isDone?"Today's position has been checked off and removed from the remaining pool. Your next pick arrives tomorrow.":"Today's pick stays the same all day. Check it off when you've tried it or decided to skip it.";
+ const link=document.createElement("a");link.className="position-link";link.href=POSITION_CATALOG_URL;link.target="_blank";link.rel="noopener noreferrer";link.textContent="View position catalog ↗";
+ actions.append(link);
+ if(isDone){const done=document.createElement("div");done.className="position-done";done.textContent="✓ Completed for today";actions.append(done)}else{const label=document.createElement("label");label.className="position-check";const check=document.createElement("input");check.type="checkbox";check.setAttribute("aria-label","Mark today’s position complete");check.addEventListener("change",()=>{if(check.checked){if(!positionState.completed.includes(picked.id))positionState.completed.push(picked.id);savePositionState();localStorage.setItem(POSITION_DAY_KEY,JSON.stringify({date:dateKey(),id:picked.id,done:true}));renderPositionOfDay()}});const labelText=document.createElement("span");labelText.textContent="Done for today — remove from pool";label.append(check,labelText);actions.append(label)}
+}
+
 function spin(){
  grantDaily();if(spinning||items.length<2)return;if(voucher.balance<1){let n=new Date();n.setHours(24,0,0,0);$("nextVoucherText").textContent=`Next voucher in about ${Math.ceil((n-Date.now())/3600000)} hour(s).`;return openOverlay("noVoucherOverlay")}
  voucher.balance--;saveVoucher();updateVoucher();spinning=true;spinBtn.disabled=true;const stage=document.getElementById("wheelStage");stage.classList.remove("spinning");void stage.offsetWidth;stage.classList.add("spinning");status.textContent="The wheel is deciding... 👀";playTone(180,.08);
@@ -338,7 +405,7 @@ let lastTrail=0;document.addEventListener("pointermove",e=>{if(Date.now()-lastTr
 function floating(){let h=document.createElement("span");h.className="heart";h.textContent=["💗","💖","💕","✨"][Math.floor(Math.random()*4)];h.style.left=Math.random()*100+"vw";h.style.fontSize=14+Math.random()*24+"px";h.style.animationDuration=7+Math.random()*7+"s";$("floatingHearts").appendChild(h);setTimeout(()=>h.remove(),14500)}
 setInterval(floating,650);for(let i=0;i<10;i++)setTimeout(floating,i*180);
 
-grantDaily();updatePoints();renderAchievements();renderInventory();loadSharedItems();
+grantDaily();updatePoints();renderAchievements();renderInventory();renderPositionOfDay();loadSharedItems();
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));
 </script>
 
