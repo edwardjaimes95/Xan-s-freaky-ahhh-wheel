@@ -1,4 +1,4 @@
-const CACHE = "xans-wheel-v4-7-live-options";
+const CACHE = "xans-wheel-v4-8-roulette";
 
 const FILES = [
   "./",
